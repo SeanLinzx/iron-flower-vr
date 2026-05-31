@@ -1,0 +1,4 @@
+# bHaptics Python SDK + Web 桥接 HTTP 服务
+# 文档：https://docs.bhaptics.com/sdk/python/
+bhaptics-python>=2.0.0
+aiohttp>=3.9.0

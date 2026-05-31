@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>故事篇章｜铜官窑打铁花 VR 体验</title>
+    <link rel="stylesheet" href="./css/home-nav.css" />
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="./story-flow.js?v=20260531-a15"></script>
+    <script src="./js/vr-ui.js"></script>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      body.story-cg-page .home-nav-link {
+        background: rgba(0, 0, 0, 0.42);
+        border-color: rgba(255, 189, 66, 0.28);
+        font-size: 12px;
+        padding: 6px 12px;
+        backdrop-filter: blur(6px);
+      }
+
+      .story-stage {
+        position: fixed;
+        inset: 0;
+        z-index: 12;
+        background: #000;
+        color: #fff6df;
+        opacity: 0;
+        transition: opacity 360ms ease;
+        cursor: pointer;
+      }
+
+      body.is-ready .story-stage {
+        opacity: 1;
+      }
+
+      body.is-leaving .story-stage {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      body.vr-active .story-stage {
+        display: none;
+      }
+
+      .story-stage__figure {
+        position: absolute;
+        inset: 0;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #000;
+      }
+
+      .story-stage__image {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        object-position: center center;
+        opacity: 0;
+        transform: scale(1.012);
+        transition:
+          opacity 480ms ease,
+          transform 680ms cubic-bezier(0.22, 1, 0.36, 1);
+        user-select: none;
+        -webkit-user-drag: none;
+      }
+
+      body.is-ready .story-stage__image {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      body.is-leaving .story-stage__image {
+        opacity: 0;
+        transform: scale(0.992);
+      }
+
+      .story-stage__chrome {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 14;
+      }
+
+      .story-vr-btn {
+        position: absolute;
+        top: 14px;
+        right: 16px;
+        pointer-events: auto;
+        padding: 7px 14px;
+        border: 1px solid rgba(255, 189, 66, 0.32);
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.46);
+        color: rgba(255, 236, 190, 0.88);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        backdrop-filter: blur(8px);
+        transition: background 180ms ease, border-color 180ms ease;
+      }
+
+      .story-vr-btn:hover,
+      .story-vr-btn:focus-visible {
+        background: rgba(255, 189, 66, 0.18);
+        border-color: rgba(255, 224, 161, 0.62);
+        outline: none;
+      }
+
+      .story-vr-btn.is-hidden {
+        display: none;
+      }
+
+      .story-tap-hint {
+        position: absolute;
+        right: 22px;
+        bottom: 22px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 16px 9px 14px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.52);
+        border: 1px solid rgba(255, 189, 66, 0.28);
+        color: rgba(255, 240, 205, 0.9);
+        font-size: 13px;
+        letter-spacing: 0.04em;
+        backdrop-filter: blur(8px);
+        animation: storyHintPulse 2.4s ease-in-out infinite;
+      }
+
+      .story-tap-hint__icon {
+        font-size: 18px;
+        line-height: 1;
+        opacity: 0.88;
+      }
+
+      @keyframes storyHintPulse {
+        0%,
+        100% {
+          opacity: 0.72;
+          transform: translateY(0);
+        }
+        50% {
+          opacity: 1;
+          transform: translateY(-2px);
+        }
+      }
+
+      .story-finish-btn {
+        position: absolute;
+        left: 50%;
+        bottom: 28px;
+        transform: translateX(-50%);
+        pointer-events: auto;
+        min-width: 180px;
+        padding: 13px 28px;
+        border: 1px solid rgba(255, 224, 161, 0.72);
+        border-radius: 999px;
+        background: rgba(255, 189, 66, 0.28);
+        color: #fff8ce;
+        font-size: 15px;
+        font-weight: 800;
+        cursor: pointer;
+        box-shadow: 0 10px 36px rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(8px);
+        display: none;
+      }
+
+      .story-finish-btn:hover,
+      .story-finish-btn:focus-visible {
+        background: rgba(255, 189, 66, 0.4);
+        outline: none;
+      }
+
+      body.story-mode-finish .story-tap-hint {
+        display: none;
+      }
+
+      body.story-mode-finish .story-stage {
+        cursor: default;
+      }
+
+      body.story-mode-finish .story-finish-btn {
+        display: inline-block;
+      }
+
+      body.story-mode-error .story-error {
+        display: block;
+      }
+
+      .story-error {
+        display: none;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        max-width: min(420px, 86vw);
+        padding: 18px 22px;
+        border-radius: 14px;
+        background: rgba(12, 8, 4, 0.88);
+        border: 1px solid rgba(255, 189, 66, 0.35);
+        color: #ffe8b0;
+        text-align: center;
+        line-height: 1.6;
+        pointer-events: none;
+      }
+
+      body:not(.vr-active) a-scene {
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      body.vr-active a-scene {
+        visibility: visible;
+        pointer-events: auto;
+      }
+
+      .vr-gaze-dot {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        width: 10px;
+        height: 10px;
+        margin: -5px 0 0 -5px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 232, 176, 0.88);
+        box-shadow: 0 0 12px rgba(255, 189, 66, 0.45);
+        pointer-events: none;
+        z-index: 30;
+        opacity: 0;
+        transition: opacity 220ms ease;
+      }
+
+      body.vr-active .vr-gaze-dot {
+        opacity: 0.85;
+      }
+    </style>
+  </head>
+  <body class="story-cg-page">
+    <div id="storyStage" class="story-stage" aria-live="polite">
+      <figure class="story-stage__figure">
+        <img id="stageImage" class="story-stage__image" alt="" draggable="false" />
+      </figure>
+      <div class="story-stage__chrome">
+        <button id="enterVrBtn" type="button" class="story-vr-btn">VR 观看</button>
+        <div id="tapHint" class="story-tap-hint" aria-hidden="true">
+          <span id="tapHintText" class="story-tap-hint__text">点击继续</span>
+          <span class="story-tap-hint__icon">›</span>
+        </div>
+        <button id="stageContinueBtn" type="button" class="story-finish-btn">返回首页</button>
+        <p id="bootError" class="story-error"></p>
+      </div>
+    </div>
+
+    <div class="vr-gaze-dot" aria-hidden="true"></div>
+
+    <a-scene
+      id="storyScene"
+      embedded
+      renderer="antialias: true; colorManagement: true; alpha: false"
+      xr-mode-ui="enabled: true"
+      device-orientation-permission-ui="enabled: true"
+      loading-screen="enabled: true; backgroundColor: #000000"
+      vr-ui-interaction="preferGaze: true"
+    >
+      <a-assets timeout="120000"></a-assets>
+      <a-sky color="#000000"></a-sky>
+      <a-light type="ambient" color="#ffffff" intensity="0.85"></a-light>
+
+      <a-entity id="rig" position="0 1.6 0">
+        <a-camera
+          id="storyCamera"
+          look-controls="enabled: false"
+          wasd-controls="enabled: false"
+        >
+          <a-entity id="storyFrame" position="0 0.02 -1.72">
+            <a-plane
+              id="storyPanel"
+              story-texture-panel="src: ; width: 3.35; fadeIn: true"
+              position="0 0 0"
+              material="shader: flat"
+            ></a-plane>
+            <a-entity
+              id="continueBtn"
+              class="clickable"
+              position="0 -1.02 0.06"
+              story-continue-btn="next: ; label: 继续"
+            ></a-entity>
+          </a-entity>
+        </a-camera>
+
+        <a-entity
+          id="leftHand"
+          laser-controls="hand: left"
+          raycaster="enabled: false"
+          line="visible: false"
+        ></a-entity>
+        <a-entity
+          id="rightHand"
+          laser-controls="hand: right"
+          raycaster="enabled: false"
+          line="visible: false"
+        ></a-entity>
+      </a-entity>
+    </a-scene>
+
+    <script>
+      var pageQuery = new URLSearchParams(window.location.search);
+      var currentLanguage = "zh";
+      var currentStep = null;
+      var currentStepId = "";
+      var isNavigating = false;
+      var lastAdvanceAt = 0;
+      var preloadImage = new Image();
+
+      function isSceneNext(next) {
+        return !!(next && next.indexOf("scene:") === 0);
+      }
+
+      function isFinishStep(step) {
+        return !!(step && step.next && step.next.indexOf("scene:iron.html") === 0);
+      }
+
+      function advanceStory() {
+        if (!currentStep || !currentStep.next || isNavigating) return;
+        if (isFinishStep(currentStep)) return;
+        var now = performance.now();
+        if (now - lastAdvanceAt < 320) return;
+        lastAdvanceAt = now;
+        navigateWithFade(currentStep.next);
+      }
+
+      function finishStory() {
+        if (!currentStep || !currentStep.next || isNavigating) return;
+        navigateWithFade(currentStep.next);
+      }
+
+      function applyLanguage() {
+        if (!currentStep) return;
+        var button = currentLanguage === "zh" ? currentStep.buttonZh : currentStep.buttonEn;
+        var hint = currentLanguage === "zh" ? "点击继续" : "Click to continue";
+        document.getElementById("continueBtn").setAttribute("story-continue-btn", {
+          next: currentStep.next,
+          label: button,
+        });
+        document.getElementById("tapHintText").textContent = hint;
+        document.getElementById("stageContinueBtn").textContent = button;
+        document.documentElement.lang = currentLanguage === "zh" ? "zh-CN" : "en";
+        updateUiMode();
+      }
+
+      function updateUiMode() {
+        document.body.classList.toggle("story-mode-finish", isFinishStep(currentStep));
+      }
+
+      function layoutStoryFrame(height) {
+        var panelHeight = height || 1.6;
+        var buttonY = -(panelHeight * 0.5 + 0.18);
+        document.querySelector("#continueBtn").setAttribute("position", "0 " + buttonY + " 0.06");
+      }
+
+      function syncStepUrl(stepId) {
+        var params = new URLSearchParams(window.location.search);
+        params.set("story", "1");
+        params.set("step", stepId);
+        history.replaceState(null, "", "./story-image.html?" + params.toString());
+      }
+
+      function preloadNextStep() {
+        if (!currentStep || isSceneNext(currentStep.next)) return;
+        var nextStep = window.IronFlowerStory.getStep(
+          currentStep.next,
+          pageQuery.get("score"),
+          currentLanguage
+        );
+        if (!nextStep) return;
+        preloadImage.src = nextStep.image;
+      }
+
+      function renderStep(stepId, score, onReady) {
+        currentStepId = stepId;
+        currentStep = window.IronFlowerStory.getStep(stepId, score, currentLanguage);
+        if (!currentStep) {
+          if (onReady) onReady(false);
+          return;
+        }
+
+        syncStepUrl(stepId);
+        document.body.classList.remove("is-ready");
+
+        var stageImage = document.getElementById("stageImage");
+        stageImage.alt =
+          currentLanguage === "zh" ? currentStep.captionZh || "故事 CG" : currentStep.captionEn || "Story CG";
+
+        var panel = document.querySelector("#storyPanel");
+        var loader = new Image();
+
+        loader.onload = function () {
+          stageImage.src = currentStep.image;
+          panel.setAttribute("story-texture-panel", {
+            src: currentStep.image,
+            width: 3.35,
+            fadeIn: true,
+          });
+          applyLanguage();
+          preloadNextStep();
+          window.requestAnimationFrame(function () {
+            document.body.classList.add("is-ready");
+            if (onReady) onReady(true);
+          });
+        };
+
+        loader.onerror = function () {
+          stageImage.src = currentStep.image;
+          applyLanguage();
+          document.body.classList.add("is-ready");
+          if (onReady) onReady(true);
+        };
+
+        loader.src = currentStep.image;
+      }
+
+      function navigateWithFade(next) {
+        if (!next || isNavigating) return;
+        isNavigating = true;
+        document.body.classList.add("is-leaving");
+
+        window.setTimeout(function () {
+          if (isSceneNext(next)) {
+            window.IronFlowerStory.navigateNext(next);
+            return;
+          }
+          renderStep(next, pageQuery.get("score"), function () {
+            document.body.classList.remove("is-leaving");
+            isNavigating = false;
+          });
+        }, 260);
+      }
+
+      function bindContinueNavigation() {
+        window.__storyContinueHandler = function (next) {
+          if (isFinishStep(currentStep)) {
+            finishStory();
+            return;
+          }
+          advanceStory();
+        };
+
+        document.getElementById("stageContinueBtn").addEventListener("click", function (event) {
+          event.stopPropagation();
+          finishStory();
+        });
+
+        document.getElementById("storyStage").addEventListener("click", function (event) {
+          if (event.target.closest("#enterVrBtn") || event.target.closest("#stageContinueBtn")) return;
+          advanceStory();
+        });
+
+        document.addEventListener("keydown", function (event) {
+          if (event.code === "Space" || event.code === "Enter") {
+            event.preventDefault();
+            if (isFinishStep(currentStep)) finishStory();
+            else advanceStory();
+          }
+        });
+
+        bindGamepadAdvance();
+      }
+
+      function bindGamepadAdvance() {
+        var pressed = false;
+        function pollGamepad() {
+          if (!document.body.classList.contains("is-ready") || isNavigating) {
+            window.requestAnimationFrame(pollGamepad);
+            return;
+          }
+          var pads = navigator.getGamepads ? navigator.getGamepads() : [];
+          var active = false;
+          for (var i = 0; i < pads.length; i++) {
+            var pad = pads[i];
+            if (!pad) continue;
+            if (pad.buttons[0] && pad.buttons[0].pressed) {
+              active = true;
+              break;
+            }
+          }
+          if (active && !pressed) {
+            if (isFinishStep(currentStep)) finishStory();
+            else advanceStory();
+          }
+          pressed = active;
+          window.requestAnimationFrame(pollGamepad);
+        }
+        window.requestAnimationFrame(pollGamepad);
+      }
+
+      function tryEnterVr(scene) {
+        if (!scene || !scene.enterVR) return;
+        scene
+          .enterVR()
+          .then(function () {
+            document.getElementById("enterVrBtn").classList.add("is-hidden");
+          })
+          .catch(function () {});
+      }
+
+      function showBootError(message) {
+        document.body.classList.add("is-ready", "story-mode-error");
+        document.getElementById("bootError").textContent = message;
+        document.getElementById("tapHint").style.display = "none";
+        document.getElementById("stageContinueBtn").style.display = "inline-block";
+        document.getElementById("stageContinueBtn").textContent = "返回首页";
+        document.getElementById("stageContinueBtn").onclick = function (event) {
+          event.stopPropagation();
+          window.location.href = "./iron.html";
+        };
+      }
+
+      function bootStoryPage() {
+        if (pageQuery.get("story") !== "1") {
+          window.location.href = "./iron.html";
+          return;
+        }
+
+        if (!window.IronFlowerStory || !window.IronFlowerStory.getStep) {
+          showBootError("故事脚本加载失败，请强制刷新页面（Ctrl+Shift+R）");
+          return;
+        }
+
+        var stepId = pageQuery.get("step") || "start-2";
+        if (!window.IronFlowerStory.getStep(stepId, pageQuery.get("score"), currentLanguage)) {
+          stepId = "start-2";
+        }
+
+        var panel = document.querySelector("#storyPanel");
+        panel.addEventListener("story-panel-sized", function (event) {
+          layoutStoryFrame(event.detail.height);
+        });
+
+        bindContinueNavigation();
+
+        renderStep(stepId, pageQuery.get("score"), function (ok) {
+          if (!ok) showBootError("找不到故事步骤，请返回首页重试");
+        });
+
+        var scene = document.querySelector("#storyScene");
+        var preferVr =
+          pageQuery.get("vr") === "1" ||
+          window.sessionStorage.getItem("ironflower-prefer-vr") === "1";
+        var enterVrBtn = document.getElementById("enterVrBtn");
+
+        enterVrBtn.addEventListener("click", function (event) {
+          event.stopPropagation();
+          tryEnterVr(scene);
+        });
+
+        scene.addEventListener("loaded", function () {
+          if (preferVr) {
+            window.setTimeout(function () {
+              tryEnterVr(scene);
+            }, 360);
+          }
+        });
+
+        scene.addEventListener("enter-vr", function () {
+          document.body.classList.add("vr-active");
+          window.sessionStorage.setItem("ironflower-prefer-vr", "1");
+          enterVrBtn.classList.add("is-hidden");
+        });
+
+        scene.addEventListener("exit-vr", function () {
+          document.body.classList.remove("vr-active");
+          enterVrBtn.classList.remove("is-hidden");
+        });
+      }
+
+      bootStoryPage();
+    </script>
+    <script src="./js/home-nav.js"></script>
+  </body>
+</html>

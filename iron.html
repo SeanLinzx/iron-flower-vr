@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>铜官窑打铁花 VR 体验｜模式选择</title>
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="./story-flow.js?v=20260531-cg"></script>
+    <script src="./js/vr-ui.js"></script>
+    <script>
+      AFRAME.registerComponent("local-texture-sky", {
+        schema: { src: { type: "string", default: "" } },
+        init: function () {
+          this._texture = null;
+          this.refreshSky = this.refreshSky.bind(this);
+          this.el.sceneEl.addEventListener("loaded", this.refreshSky);
+          if (this.el.sceneEl.hasLoaded) this.refreshSky();
+        },
+        update: function () {
+          this.refreshSky();
+        },
+        remove: function () {
+          if (this._texture) this._texture.dispose();
+        },
+        resolveSrc: function () {
+          var src = (this.data.src || "").trim();
+          if (!src) return "";
+          if (src.charAt(0) !== "#") return src;
+          var asset = document.querySelector(src);
+          if (!asset) return "";
+          return asset.getAttribute("src") || asset.src || "";
+        },
+        refreshSky: function () {
+          var self = this;
+          var src = (this.data.src || "").trim();
+          var url = this.resolveSrc();
+          if (!url) return;
+          if (src.charAt(0) === "#") {
+            var asset = document.querySelector(src);
+            if (asset && (!asset.complete || !asset.naturalWidth)) {
+              asset.addEventListener("load", function () {
+                self.refreshSky();
+              });
+              return;
+            }
+          }
+          var mesh = this.el.getObject3D("mesh");
+          if (!mesh) {
+            requestAnimationFrame(function () {
+              self.refreshSky();
+            });
+            return;
+          }
+          if (this._texture) {
+            this._texture.dispose();
+            this._texture = null;
+          }
+          var loader = new THREE.TextureLoader();
+          loader.setCrossOrigin(url.indexOf("http") === 0 ? "anonymous" : undefined);
+          loader.load(
+            url,
+            function (texture) {
+              texture.colorSpace = THREE.SRGBColorSpace;
+              texture.mapping = THREE.EquirectangularReflectionMapping;
+              texture.minFilter = THREE.LinearFilter;
+              texture.magFilter = THREE.LinearFilter;
+              texture.generateMipmaps = false;
+              texture.needsUpdate = true;
+              self._texture = texture;
+              mesh.material = new THREE.MeshBasicMaterial({
+                map: texture,
+                side: THREE.BackSide,
+                fog: false,
+                toneMapped: false,
+              });
+              mesh.material.needsUpdate = true;
+            },
+            undefined,
+            function (error) {
+              console.warn("[local-texture-sky] failed to load:", url, error);
+            }
+          );
+        },
+      });
+    </script>
+    <style>
+      :root {
+        color-scheme: dark;
+        --gold: #ffbd42;
+        --gold-soft: #ffe0a1;
+        --ink: #070402;
+        --panel: rgba(16, 9, 5, 0.72);
+        --line: rgba(255, 189, 66, 0.34);
+        --cyan: #48d6d2;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--ink);
+        color: #fff6df;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      body {
+        display: flex;
+        align-items: stretch;
+        background:
+          linear-gradient(90deg, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.18) 42%, rgba(0, 0, 0, 0.58)),
+          linear-gradient(180deg, rgba(4, 8, 18, 0.12), rgba(4, 6, 14, 0.78)),
+          url("./assets/backgrounds/start-nano.png") center / cover no-repeat;
+      }
+
+      body:not(.vr-active) #menuScene {
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      body.vr-active main,
+      body.vr-active .vr-enter-bar {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      body.vr-active #menuScene {
+        visibility: visible;
+        z-index: 3;
+        pointer-events: auto;
+      }
+
+      .vr-gaze-dot {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        width: 10px;
+        height: 10px;
+        margin: -5px 0 0 -5px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 232, 176, 0.88);
+        box-shadow: 0 0 12px rgba(255, 189, 66, 0.45);
+        pointer-events: none;
+        z-index: 30;
+        opacity: 0;
+        transition: opacity 220ms ease;
+      }
+
+      body.vr-active .vr-gaze-dot {
+        opacity: 0.85;
+      }
+
+      main {
+        position: relative;
+        z-index: 2;
+        width: min(1160px, calc(100vw - 40px));
+        margin: 0 auto;
+        padding: clamp(28px, 5vw, 64px) 0;
+        display: grid;
+        grid-template-columns: minmax(280px, 0.9fr) minmax(320px, 1.1fr);
+        gap: clamp(24px, 5vw, 72px);
+        align-items: end;
+        transition: opacity 320ms ease;
+      }
+
+      .brand {
+        min-height: min(660px, calc(100vh - 96px));
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        text-shadow: 0 4px 26px rgba(0, 0, 0, 0.86);
+      }
+
+      .kicker {
+        margin: 0 0 16px;
+        color: var(--gold);
+        font-size: clamp(14px, 1.8vw, 18px);
+      }
+
+      h1 {
+        margin: 0;
+        max-width: 680px;
+        color: #fff2a8;
+        font-size: clamp(64px, 11vw, 154px);
+        font-style: italic;
+        font-weight: 950;
+        line-height: 0.84;
+        letter-spacing: 0;
+        text-transform: uppercase;
+        transform: skewX(-8deg);
+        filter: drop-shadow(0 0 22px rgba(255, 176, 46, 0.38));
+      }
+
+      .subtitle {
+        margin: 20px 0 0;
+        max-width: 620px;
+        color: #ffe8b0;
+        font-size: clamp(16px, 2.1vw, 23px);
+        line-height: 1.45;
+      }
+
+      .credit {
+        margin: 32px 0 0;
+        color: #cfeef2;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .mode-panel {
+        width: 100%;
+        padding: clamp(18px, 3vw, 30px);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        box-shadow: 0 30px 90px rgba(0, 0, 0, 0.46);
+        backdrop-filter: blur(10px);
+      }
+
+      .mode-panel h2 {
+        margin: 0 0 16px;
+        color: #fff8ce;
+        font-size: 22px;
+        letter-spacing: 0;
+      }
+
+      .story-link,
+      .level-link {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .story-link {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        min-height: 92px;
+        margin-bottom: 20px;
+        padding: 20px 22px;
+        border: 1px solid rgba(255, 224, 161, 0.48);
+        border-radius: 6px;
+        background: rgba(255, 189, 66, 0.18);
+        transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+      }
+
+      .story-link:hover,
+      .story-link:focus-visible,
+      .level-link:hover,
+      .level-link:focus-visible {
+        transform: translateY(-2px);
+        border-color: rgba(255, 224, 161, 0.8);
+        outline: none;
+      }
+
+      .story-title,
+      .level-title {
+        display: block;
+        color: #fff8ce;
+        font-size: 18px;
+        font-weight: 800;
+      }
+
+      .story-text,
+      .level-text {
+        display: block;
+        margin-top: 6px;
+        color: rgba(255, 232, 176, 0.86);
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .arrow {
+        flex: 0 0 auto;
+        display: grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 224, 161, 0.42);
+        color: var(--gold-soft);
+        font-size: 24px;
+      }
+
+      .levels {
+        display: grid;
+        gap: 12px;
+      }
+
+      .level-link {
+        display: grid;
+        grid-template-columns: 48px 1fr;
+        gap: 14px;
+        align-items: center;
+        min-height: 84px;
+        padding: 14px;
+        border: 1px solid rgba(255, 189, 66, 0.25);
+        border-radius: 6px;
+        background: rgba(6, 4, 3, 0.5);
+        transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+      }
+
+      .level-index {
+        display: grid;
+        place-items: center;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: 1px solid rgba(72, 214, 210, 0.54);
+        color: var(--cyan);
+        font-weight: 900;
+      }
+
+      .footer-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .footer-links a {
+        color: #d8eef8;
+        font-size: 13px;
+      }
+
+      .vr-enter-bar {
+        position: fixed;
+        left: 50%;
+        bottom: 22px;
+        z-index: 30;
+        transform: translateX(-50%);
+        display: grid;
+        gap: 8px;
+        justify-items: center;
+        transition: opacity 320ms ease;
+      }
+
+      .vr-enter-bar button {
+        min-width: 220px;
+        padding: 12px 24px;
+        border: 1px solid rgba(255, 224, 161, 0.72);
+        border-radius: 999px;
+        background: rgba(255, 189, 66, 0.24);
+        color: #fff8ce;
+        font-size: 15px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .vr-enter-bar p {
+        margin: 0;
+        color: #ffd27a;
+        font-size: 13px;
+        text-shadow: 0 2px 14px rgba(0, 0, 0, 0.85);
+      }
+
+      .vr-enter-bar button.is-hidden {
+        display: none;
+      }
+
+      #menuScene {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+      }
+
+      @media (max-width: 820px) {
+        body {
+          align-items: flex-start;
+          overflow: auto;
+        }
+
+        main {
+          grid-template-columns: 1fr;
+          align-items: start;
+        }
+
+        .brand {
+          min-height: auto;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <a-scene
+      id="menuScene"
+      embedded
+      renderer="antialias: true; colorManagement: true; alpha: false"
+      xr-mode-ui="enabled: true"
+      device-orientation-permission-ui="enabled: true"
+      loading-screen="enabled: false"
+      vr-ui-interaction="preferGaze: true"
+    >
+      <a-assets>
+        <img id="menuSky" crossorigin="anonymous" src="./assets/backgrounds/start-nano.png" />
+      </a-assets>
+      <a-sky
+        id="menuSkySphere"
+        radius="500"
+        local-texture-sky="src: #menuSky"
+        rotation="0 -88 0"
+      ></a-sky>
+      <a-light type="ambient" color="#ffffff" intensity="0.95"></a-light>
+
+      <a-entity id="menuRig" position="0 1.6 0">
+        <a-camera
+          id="menuCamera"
+          look-controls="enabled: false"
+          wasd-controls="enabled: false"
+        >
+          <a-entity id="menuFrame" position="0 -0.02 -2.05">
+            <a-entity
+              id="menuTitle"
+              position="0 0.78 0.02"
+              canvas-label="text: Iron Soul|铜官窑 · 打铁花 · 模式选择; width: 3.8; height: 0.72; background: rgba(8, 4, 2, 0.62); border: rgba(255, 189, 66, 0.5); color: #fff2a8; fontSize: 38; subFontSize: 24"
+            ></a-entity>
+
+            <a-entity
+              id="menuStoryBtn"
+              class="clickable"
+              position="0 0.2 0.04"
+              canvas-button="label: 故事模式; sublabel: 先读故事，再依次进入素材、练习与表演; href: ./story-image.html?story=1&step=start-2; width: 3.5; height: 0.62; background: rgba(255, 189, 66, 0.24); border: rgba(255, 224, 161, 0.72)"
+            ></a-entity>
+
+            <a-entity
+              id="menuLevel1Btn"
+              class="clickable"
+              position="0 -0.22 0.04"
+              canvas-button="label: 关卡 1 · 准备素材; sublabel: 选择材料、入炉、控温融铁; href: ./scene-materials.html?mode=level; width: 3.5; height: 0.58; background: rgba(6, 4, 3, 0.72); border: rgba(255, 189, 66, 0.45)"
+            ></a-entity>
+
+            <a-entity
+              id="menuLevel2Btn"
+              class="clickable"
+              position="0 -0.64 0.04"
+              canvas-button="label: 关卡 2 · 练习场景; sublabel: 完成四关节奏练习; href: ./scene-practice.html?mode=level; width: 3.5; height: 0.58; background: rgba(6, 4, 3, 0.72); border: rgba(255, 189, 66, 0.45)"
+            ></a-entity>
+
+            <a-entity
+              id="menuLevel3Btn"
+              class="clickable"
+              position="0 -1.06 0.04"
+              canvas-button="label: 关卡 3 · 表演场景; sublabel: 正式表演并获观众反馈; href: ./scene-performance.html?mode=level; width: 3.5; height: 0.58; background: rgba(6, 4, 3, 0.72); border: rgba(255, 189, 66, 0.45)"
+            ></a-entity>
+          </a-entity>
+        </a-camera>
+
+        <a-entity id="leftHand" laser-controls="hand: left" raycaster="enabled: false" line="visible: false"></a-entity>
+        <a-entity
+          id="rightHand"
+          laser-controls="hand: right"
+          raycaster="objects: .clickable"
+          cursor="fuse: false; rayOrigin: entity"
+          line="color: #ffb13d; opacity: 0.75"
+        ></a-entity>
+      </a-entity>
+    </a-scene>
+
+    <div class="vr-enter-bar">
+      <button id="enterVrBtn" type="button">进入 VR 选择模式</button>
+      <p id="vrHint">VR 内请用视线或右手柄指向菜单按钮后按扳机</p>
+    </div>
+
+    <div class="vr-gaze-dot" aria-hidden="true"></div>
+
+    <main>
+      <section class="brand" aria-labelledby="pageTitle">
+        <div>
+          <p class="kicker">Tongguan Kiln Iron Flower VR Game</p>
+          <h1 id="pageTitle">Iron Soul</h1>
+          <p class="subtitle">铜官窑 · 打铁花 / Intangible Heritage Iron Flower Experience</p>
+        </div>
+        <p class="credit">设计前沿专题研究-组2 / Design Frontiers Research - Group 2</p>
+      </section>
+
+      <section class="mode-panel" aria-label="模式选择">
+        <h2>选择体验模式</h2>
+
+        <a class="story-link" href="./story-image.html?story=1&amp;step=start-2">
+          <span>
+            <span class="story-title">故事模式</span>
+            <span class="story-text">先阅读故事图片，再依次进入素材、练习与表演场景；表演得分决定结局画面。</span>
+          </span>
+          <span class="arrow" aria-hidden="true">›</span>
+        </a>
+
+        <h2>关卡模式</h2>
+        <div class="levels">
+          <a class="level-link" href="./scene-materials.html?mode=level">
+            <span class="level-index">1</span>
+            <span>
+              <span class="level-title">准备素材的场景</span>
+              <span class="level-text">选择材料、入炉、控温融铁。</span>
+            </span>
+          </a>
+          <a class="level-link" href="./scene-practice.html?mode=level">
+            <span class="level-index">2</span>
+            <span>
+              <span class="level-title">练习场景</span>
+              <span class="level-text">完成四关节奏练习，获得表演资格。</span>
+            </span>
+          </a>
+          <a class="level-link" href="./scene-performance.html?mode=level">
+            <span class="level-index">3</span>
+            <span>
+              <span class="level-title">表演场景</span>
+              <span class="level-text">进入正式表演，击打铁花并得到观众反馈。</span>
+            </span>
+          </a>
+        </div>
+
+        <div class="footer-links">
+          <a href="./iron_v0.1.html">查看旧版本</a>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      var pageQuery = new URLSearchParams(window.location.search);
+
+      function syncHomeVrUiState(scene) {
+        var inVr = scene && scene.is && scene.is("vr-mode");
+        document.body.classList.toggle("vr-active", !!inVr);
+        var enterVrBtn = document.getElementById("enterVrBtn");
+        if (enterVrBtn) enterVrBtn.classList.toggle("is-hidden", !!inVr);
+      }
+
+      function tryEnterVr(scene) {
+        if (!scene || !scene.enterVR) return;
+        scene.enterVR().catch(function () {
+          syncHomeVrUiState(scene);
+        });
+      }
+
+      window.addEventListener("load", function () {
+        var scene = document.querySelector("#menuScene");
+        var enterVrBtn = document.getElementById("enterVrBtn");
+        var autoEnterVr = pageQuery.get("vr") === "1";
+
+        syncHomeVrUiState(scene);
+
+        enterVrBtn.addEventListener("click", function () {
+          tryEnterVr(scene);
+        });
+
+        scene.addEventListener("loaded", function () {
+          syncHomeVrUiState(scene);
+          if (autoEnterVr) {
+            setTimeout(function () {
+              tryEnterVr(scene);
+            }, 420);
+          }
+        });
+
+        scene.addEventListener("enter-vr", function () {
+          syncHomeVrUiState(scene);
+          window.sessionStorage.setItem("ironflower-prefer-vr", "1");
+          var menuFrame = document.querySelector("#menuFrame");
+          if (menuFrame) menuFrame.setAttribute("visible", "true");
+        });
+
+        scene.addEventListener("exit-vr", function () {
+          syncHomeVrUiState(scene);
+        });
+
+        document.addEventListener("visibilitychange", function () {
+          if (!document.hidden) syncHomeVrUiState(scene);
+        });
+      });
+    </script>
+  </body>
+</html>
