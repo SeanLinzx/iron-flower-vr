@@ -878,6 +878,7 @@
     </a-scene>
 
     <script src="./js/app-entry.js?v=20260601-entry"></script>
+    <script src="./js/web-i18n.js?v=20260601-web-i18n"></script>
     <script src="./story-flow.js?v=20260531-cg"></script>
     <script src="./js/home-nav.js"></script>
     <script>
@@ -961,7 +962,7 @@
       var ladleLoaded = false;
       var lowerStickAdded = false;
       var lastBurst = 0;
-      var currentLanguage = "zh";
+      var currentLanguage = window.IronFlowerWebI18n ? window.IronFlowerWebI18n.getLang() : "zh";
       var lastLanguageToggle = 0;
       var currentSceneStep = 1;
       var gameStarted = false;
@@ -1108,6 +1109,7 @@
         if (now - lastLanguageToggle < 250) return;
         lastLanguageToggle = now;
         currentLanguage = currentLanguage === "zh" ? "en" : "zh";
+        if (window.IronFlowerWebI18n) window.IronFlowerWebI18n.setLang(currentLanguage);
         applyLanguage();
       }
 

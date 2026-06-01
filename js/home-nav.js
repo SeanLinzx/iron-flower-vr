@@ -86,9 +86,14 @@
     document.body.insertBefore(root, document.body.firstChild);
   }
 
+  function resolveInitialLanguage() {
+    if (window.IronFlowerWebI18n) return window.IronFlowerWebI18n.getLang();
+    return "zh";
+  }
+
   function init() {
     ensureDesktopNav();
-    applyLanguage("zh");
+    applyLanguage(resolveInitialLanguage());
     bindVrHomeNav();
   }
 
