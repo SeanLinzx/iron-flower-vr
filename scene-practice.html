@@ -440,7 +440,7 @@
 
     <div class="overlay">
       <div class="home-nav-row">
-        <a id="homeNavLink" class="home-nav-link" href="./iron.html">返回首页</a>
+        <a id="homeNavLink" class="home-nav-link" href="./iron-web.html">返回首页</a>
       </div>
       <span class="badge">Iron Flower VR Prototype</span>
       <div class="overlay-row">
@@ -484,7 +484,6 @@
       manual-interaction
     >
       <a-assets timeout="120000">
-        <img id="workshopBg" crossorigin="anonymous" src="./assets/backgrounds/workshop-panorama.jpg" />
         <img id="practicePanoramaBg" crossorigin="anonymous" src="./assets/backgrounds/scene2-nano.png" />
         <a-mixin
           id="spark"
@@ -494,22 +493,6 @@
       </a-assets>
 
       <a-sky id="environmentSky" radius="500" local-texture-sky="src: #practicePanoramaBg" rotation="0 -88 0"></a-sky>
-
-      <a-entity id="workshopBackdrop" position="-4.5 2.45 -10.2" visible="false">
-        <a-image
-          width="16"
-          height="9"
-          src="#workshopBg"
-          material="shader: flat; side: double; transparent: true; opacity: 0.98"
-        ></a-image>
-        <a-plane
-          position="0 0 -0.035"
-          width="16.2"
-          height="9.2"
-          color="#050302"
-          material="shader: flat; transparent: true; opacity: 0.36"
-        ></a-plane>
-      </a-entity>
 
       <a-plane
         rotation="-90 0 0"
@@ -894,6 +877,7 @@
       <a-light type="point" color="#ff9b26" intensity="1.15" distance="12" position="0 2.6 -4.6"></a-light>
     </a-scene>
 
+    <script src="./js/app-entry.js?v=20260601-entry"></script>
     <script src="./story-flow.js?v=20260531-cg"></script>
     <script src="./js/home-nav.js"></script>
     <script>
@@ -3063,6 +3047,12 @@
           item.setAttribute("material-choice", item.getAttribute("material-choice"));
         });
         document.querySelector("#rig").setAttribute("pico-thumbstick-move", "speed: 1.8; turnSpeed: 90");
+        if (window.IronFlowerEntry) {
+          scene.addEventListener("loaded", function () {
+            window.IronFlowerEntry.tryAutoEnterVr(scene);
+          }, { once: true });
+          if (scene.hasLoaded) window.IronFlowerEntry.tryAutoEnterVr(scene);
+        }
         document.querySelector("#ladle").setAttribute("pickable", "");
         document.querySelector("#strikeTarget").setAttribute("strike-target", "");
         document.querySelector("#languageSwitch").setAttribute("language-switch", "");

@@ -1,0 +1,4096 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>表演材料准备｜铜官窑打铁花 VR 体验</title>
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="./js/vendor/OBJLoader.js"></script>
+    <script src="./js/pico-thumbstick-move.js?v=20260601-xyz"></script>
+    <script src="./js/desktop-fly-controls.js?v=20260601-web"></script>
+    <script src="./js/vr-ui.js?v=20260601-materials"></script>
+    <link rel="stylesheet" href="./css/home-nav.css" />
+    <script>
+      AFRAME.registerComponent("local-texture-sky", {
+        schema: { src: { type: "string", default: "" } },
+        init: function () {
+          this._texture = null;
+          this.refreshSky = this.refreshSky.bind(this);
+          this.el.sceneEl.addEventListener("loaded", this.refreshSky);
+          if (this.el.sceneEl.hasLoaded) this.refreshSky();
+        },
+        update: function () { this.refreshSky(); },
+        remove: function () { if (this._texture) this._texture.dispose(); },
+        resolveSrc: function () {
+          var src = (this.data.src || "").trim();
+          if (!src) return "";
+          if (src.charAt(0) !== "#") return src;
+          var asset = document.querySelector(src);
+          if (!asset) return "";
+          return asset.getAttribute("src") || asset.src || "";
+        },
+        refreshSky: function () {
+          var self = this;
+          var src = (this.data.src || "").trim();
+          var url = this.resolveSrc();
+          if (!url) url = "./assets/backgrounds/workshop-panorama.jpg";
+          if (src.charAt(0) === "#") {
+            var asset = document.querySelector(src);
+            if (asset && (!asset.complete || !asset.naturalWidth)) {
+              asset.addEventListener("load", function () { self.refreshSky(); });
+              return;
+            }
+          }
+          var mesh = this.el.getObject3D("mesh");
+          if (!mesh) {
+            requestAnimationFrame(function () { self.refreshSky(); });
+            return;
+          }
+          if (this._texture) { this._texture.dispose(); this._texture = null; }
+          var loader = new THREE.TextureLoader();
+          loader.setCrossOrigin(url.indexOf("http") === 0 ? "anonymous" : undefined);
+          loader.load(url, function (texture) {
+            texture.colorSpace = THREE.SRGBColorSpace;
+            texture.mapping = THREE.EquirectangularReflectionMapping;
+            texture.minFilter = THREE.LinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            texture.generateMipmaps = false;
+            texture.needsUpdate = true;
+            self._texture = texture;
+            mesh.material = new THREE.MeshBasicMaterial({
+              map: texture, side: THREE.BackSide, fog: false, toneMapped: false,
+            });
+            mesh.material.needsUpdate = true;
+          });
+        },
+      });
+    </script>
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #040201;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      .overlay {
+        position: fixed;
+        left: 20px;
+        top: 18px;
+        z-index: 10;
+        width: min(430px, calc(100vw - 40px));
+        color: #fff6df;
+        pointer-events: none;
+        text-shadow: 0 2px 18px rgba(0, 0, 0, 0.75);
+      }
+
+      .overlay-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+
+      .overlay h1 {
+        margin: 0;
+        font-size: 25px;
+        line-height: 1.15;
+        letter-spacing: 0;
+      }
+
+      .lang-toggle {
+        pointer-events: auto;
+        border: 1px solid rgba(255, 188, 66, 0.65);
+        border-radius: 999px;
+        background: rgba(20, 12, 5, 0.72);
+        color: #fff4d2;
+        padding: 6px 10px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+
+      .overlay .course {
+        margin: 0 0 8px;
+        color: #d8eef8;
+        font-size: 14px;
+        line-height: 1.35;
+      }
+
+      .overlay p {
+        margin: 0;
+        color: #ffd27a;
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .badge {
+        display: inline-block;
+        margin-bottom: 10px;
+        padding: 5px 9px;
+        border: 1px solid rgba(255, 188, 66, 0.5);
+        border-radius: 999px;
+        background: rgba(20, 12, 5, 0.58);
+        color: #ffbd42;
+        font-size: 12px;
+      }
+
+      body:not(.game-started) .overlay {
+        opacity: 0;
+      }
+
+      .start-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        background:
+          linear-gradient(180deg, rgba(2, 4, 8, 0.15), rgba(2, 4, 8, 0.4)),
+          url("./assets/backgrounds/start-screen.jpg") center / cover no-repeat;
+        color: #fff8ce;
+        transition: opacity 520ms ease, visibility 520ms ease;
+      }
+
+      .start-screen::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(circle at 50% 30%, rgba(255, 211, 122, 0.22), transparent 28%),
+          linear-gradient(90deg, rgba(0, 0, 0, 0.38), transparent 28%, transparent 72%, rgba(0, 0, 0, 0.38));
+        pointer-events: none;
+      }
+
+      .game-started .start-screen {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      .start-content {
+        position: relative;
+        z-index: 1;
+        width: min(980px, calc(100vw - 40px));
+        min-height: 62vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        padding: clamp(28px, 5vw, 64px) 0 clamp(34px, 6vw, 72px);
+        text-align: center;
+        text-shadow: 0 4px 24px rgba(0, 0, 0, 0.84);
+      }
+
+      .start-kicker {
+        margin: 0;
+        color: #ffd27a;
+        font-size: clamp(14px, 1.6vw, 19px);
+        letter-spacing: 0;
+      }
+
+      .start-title {
+        margin: clamp(8px, 1.8vw, 18px) 0 0;
+        font-size: clamp(56px, 13vw, 168px);
+        line-height: 0.82;
+        font-weight: 950;
+        font-style: italic;
+        letter-spacing: 0;
+        color: #fff6b8;
+        text-transform: uppercase;
+        transform: skewX(-8deg);
+        filter: drop-shadow(0 0 18px rgba(255, 186, 52, 0.42));
+      }
+
+      .start-subtitle {
+        margin: 14px auto 0;
+        max-width: 720px;
+        color: #ffe4a6;
+        font-size: clamp(15px, 2vw, 22px);
+        line-height: 1.45;
+      }
+
+      .start-button {
+        border: 1px solid rgba(255, 245, 202, 0.48);
+        min-width: min(520px, calc(100vw - 68px));
+        padding: clamp(15px, 2.2vw, 24px) 32px;
+        border-radius: 2px;
+        background: rgba(232, 207, 151, 0.7);
+        color: #fffdf0;
+        box-shadow: 0 20px 80px rgba(0, 0, 0, 0.42), inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+        font-size: clamp(30px, 5vw, 64px);
+        line-height: 1;
+        font-weight: 850;
+        letter-spacing: 0;
+        cursor: pointer;
+        text-shadow: 0 3px 16px rgba(0, 0, 0, 0.45);
+        transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+      }
+
+      .start-button:hover,
+      .start-button:focus-visible {
+        transform: translateY(-2px) scale(1.015);
+        background: rgba(255, 220, 144, 0.82);
+        outline: none;
+        box-shadow: 0 24px 90px rgba(255, 172, 46, 0.24), 0 20px 80px rgba(0, 0, 0, 0.42);
+      }
+
+      .start-hint {
+        margin-top: 14px;
+        color: rgba(255, 244, 210, 0.82);
+        font-size: 15px;
+      }
+
+      .extract-molten-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 35;
+        display: none;
+        place-items: center;
+        background: rgba(0, 0, 0, 0.55);
+        pointer-events: auto;
+      }
+
+      .extract-molten-modal.show {
+        display: grid;
+      }
+
+      .extract-molten-panel {
+        width: min(440px, calc(100vw - 36px));
+        border: 1px solid rgba(255, 188, 66, 0.55);
+        background: rgba(22, 12, 5, 0.94);
+        color: #fff2d4;
+        padding: 22px 20px;
+        text-align: center;
+        box-shadow: 0 16px 50px rgba(0, 0, 0, 0.45);
+      }
+
+      .extract-molten-title {
+        margin: 0 0 10px;
+        font-size: 30px;
+        font-weight: 900;
+        color: #ffe7a8;
+      }
+
+      .extract-molten-text {
+        margin: 0 0 16px;
+        font-size: 14px;
+        line-height: 1.55;
+        color: #ffd39b;
+      }
+
+      .extract-molten-btn {
+        border: 1px solid rgba(255, 220, 144, 0.65);
+        background: rgba(255, 170, 76, 0.28);
+        color: #fff8e8;
+        padding: 10px 22px;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .extract-molten-btn:hover,
+      .extract-molten-btn:focus-visible {
+        background: rgba(255, 188, 66, 0.42);
+        outline: none;
+      }
+
+      .choice-panel {
+        position: fixed;
+        left: 50%;
+        bottom: 28px;
+        z-index: 20;
+        width: min(520px, calc(100vw - 36px));
+        transform: translateX(-50%);
+        padding: 18px;
+        border: 1px solid rgba(255, 188, 66, 0.7);
+        border-radius: 8px;
+        background: rgba(12, 7, 3, 0.86);
+        box-shadow: 0 20px 70px rgba(0, 0, 0, 0.42);
+        color: #fff4d2;
+        pointer-events: auto;
+      }
+
+      .choice-panel[hidden] {
+        display: none;
+      }
+
+      body.vr-active .choice-panel {
+        display: none !important;
+      }
+
+      .choice-panel h2 {
+        margin: 0 0 8px;
+        font-size: 19px;
+        line-height: 1.25;
+      }
+
+      .choice-panel p {
+        margin: 0 0 14px;
+        color: #ffd27a;
+        font-size: 15px;
+        line-height: 1.5;
+      }
+
+      .choice-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+
+      .choice-actions button {
+        border: 1px solid rgba(255, 188, 66, 0.72);
+        border-radius: 6px;
+        background: rgba(255, 188, 66, 0.18);
+        color: #fff4d2;
+        padding: 9px 14px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+
+      .choice-actions button:first-child {
+        background: rgba(255, 188, 66, 0.72);
+        color: #211306;
+        font-weight: 700;
+      }
+
+    </style>
+  </head>
+
+  <body class="game-started" data-scene="perform-prep">
+    <div id="startScreen" class="start-screen">
+      <div class="start-content">
+        <div>
+          <p class="start-kicker">Tongguan Kiln Iron Flower VR Game</p>
+          <h1 class="start-title">Iron Soul</h1>
+          <p class="start-subtitle">铜官窑 · 打铁花 / Intangible Heritage Iron Flower Experience</p>
+        </div>
+        <div>
+          <button id="startButton" class="start-button" type="button">Start Strike !</button>
+          <div class="start-hint">点击按钮开始 / Click to begin</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay">
+      <div class="home-nav-row">
+        <a id="homeNavLink" class="home-nav-link" href="./iron-web.html">返回首页</a>
+      </div>
+      <span class="badge">Iron Flower VR Prototype</span>
+      <div class="overlay-row">
+        <h1 id="overlayTitle">铜官窑·打铁花</h1>
+        <button id="langToggle" class="lang-toggle" type="button">English</button>
+      </div>
+      <div class="course">设计前沿专题研究-组2 / Design Frontiers Research - Group 2</div>
+      <p id="overlayIntro">点击材料查看名称并加入熔炉；选完后前往熔炉拉风箱 3 秒，再取出铁水。</p>
+    </div>
+
+    
+    <div id="choicePanel" class="choice-panel" hidden>
+      <h2 id="choiceTitle">材料名称</h2>
+      <p id="choiceBody">材料功能说明</p>
+      <div class="choice-actions">
+        <button id="choiceYes" type="button">加入熔炉</button>
+        <button id="choiceNo" type="button">取消</button>
+      </div>
+    </div>
+
+    <div id="extractMoltenModal" class="extract-molten-modal">
+      <div class="extract-molten-panel">
+        <h2 id="extractMoltenTitle" class="extract-molten-title">铁水已就绪</h2>
+        <p id="extractMoltenText" class="extract-molten-text">表演材料准备完成。取出铁水后，将进入正式表演场景。</p>
+        <button id="extractMoltenBtn" class="extract-molten-btn" type="button">取出铁水</button>
+      </div>
+    </div>
+
+    <a-scene
+      background="color: #040201"
+      renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true"
+      xr-mode-ui="enabled: true"
+      device-orientation-permission-ui="enabled: true"
+      shadow="type: pcfsoft"
+      cursor="rayOrigin: mouse"
+      raycaster="objects: .clickable, .material-item, .material-hitbox, #vrMaterialPopup .clickable; far: 14"
+      manual-interaction
+      materials-vr-ui="debounceMs: 280"
+    >
+      <a-assets timeout="120000">
+        <img id="workshopBg" crossorigin="anonymous" src="./assets/backgrounds/prepare-vr.png" />
+        <img id="prepareBg" crossorigin="anonymous" src="./assets/backgrounds/prepare-vr.png" />
+        <img id="performanceBg" crossorigin="anonymous" src="./assets/backgrounds/scene2-nano.png" />
+        <a-mixin
+          id="spark"
+          geometry="primitive: sphere; radius: 0.025"
+          material="color: #ffb13d; emissive: #ff6a00; emissiveIntensity: 2.6; transparent: true; opacity: 1"
+        ></a-mixin>
+        <a-asset-item id="crucibleModel" src="./model/煨子/煨子.glb"></a-asset-item>
+        <a-asset-item id="tongsModel" src="./model/铁钳/铁钳.glb"></a-asset-item>
+        <a-asset-item id="ladleModel" src="./model/勺子/勺子.glb"></a-asset-item>
+        <a-asset-item id="paddleModel" src="./model/木板/木板.obj"></a-asset-item>
+        <a-asset-item id="clayModel" src="./model/高岭土/高岭土.glb"></a-asset-item>
+        <a-asset-item id="saltModel" src="./model/食盐/食盐.glb"></a-asset-item>
+        <a-asset-item id="rawIronModel" src="./model/生铁片/生铁片.glb"></a-asset-item>
+        <a-asset-item id="brassModel" src="./model/黄铜/黄铜.glb"></a-asset-item>
+        <a-asset-item id="strawModel" src="./model/稻草卷/稻草卷.glb"></a-asset-item>
+        <a-asset-item id="charcoalModel" src="./model/铁炭/铁炭.glb"></a-asset-item>
+      </a-assets>
+
+      <a-sky id="environmentSky" radius="500" local-texture-sky="src: #prepareBg" rotation="0 2 0"></a-sky>
+
+      <a-entity id="workshopBackdrop" position="-4.5 2.45 -10.2" visible="false">
+        <a-image
+          width="16"
+          height="9"
+          src="#workshopBg"
+          material="shader: flat; side: double; transparent: true; opacity: 0.98"
+        ></a-image>
+        <a-plane
+          position="0 0 -0.035"
+          width="16.2"
+          height="9.2"
+          color="#050302"
+          material="shader: flat; transparent: true; opacity: 0.36"
+        ></a-plane>
+      </a-entity>
+
+      <a-entity id="performanceBackdrop" position="7.2 2.55 -10.4" visible="false">
+        <a-image
+          width="17"
+          height="9.56"
+          src="#performanceBg"
+          material="shader: flat; side: double; transparent: true; opacity: 0.98"
+        ></a-image>
+        <a-plane
+          position="0 0 -0.035"
+          width="17.2"
+          height="9.76"
+          color="#03070b"
+          material="shader: flat; transparent: true; opacity: 0.32"
+        ></a-plane>
+      </a-entity>
+
+      <a-plane
+        rotation="-90 0 0"
+        width="34"
+        height="34"
+        color="#090706"
+        material="roughness: 0.88; metalness: 0.04; opacity: 0.18; transparent: true"
+        shadow="receive: true"
+      ></a-plane>
+
+      <a-entity id="kiln-tower" position="7.2 0 -7.2">
+        <a-cylinder position="0 0.18 0" radius="1.24" height="0.36" color="#2f1206"></a-cylinder>
+        <a-cylinder position="0 0.72 0" radius="0.9" height="0.74" color="#5e2609"></a-cylinder>
+        <a-cylinder position="0 1.3 0" radius="0.7" height="0.56" color="#87380c"></a-cylinder>
+        <a-cylinder position="0 1.82 0" radius="0.54" height="0.48" color="#a85610"></a-cylinder>
+        <a-cone
+          position="0 2.22 0"
+          radius-bottom="0.9"
+          radius-top="0.16"
+          height="0.42"
+          color="#dc8619"
+          material="metalness: 0.12; roughness: 0.45"
+        ></a-cone>
+        <a-cone
+          position="0 2.63 0"
+          radius-bottom="0.38"
+          radius-top="0.03"
+          height="0.55"
+          color="#ffb02e"
+          material="emissive: #9a4600; emissiveIntensity: 0.45"
+        ></a-cone>
+      </a-entity>
+
+      <a-entity id="flowerShed" position="7.2 0 -5.2">
+        <a-cylinder position="-1.25 1.4 0" radius="0.035" height="2.8" color="#6b3b18"></a-cylinder>
+        <a-cylinder position="1.25 1.4 0" radius="0.035" height="2.8" color="#6b3b18"></a-cylinder>
+        <a-cylinder position="0 2.75 0" radius="0.03" height="2.7" rotation="0 0 90" color="#8a521f"></a-cylinder>
+        <a-cylinder position="0 2.45 0.15" radius="0.022" height="2.55" rotation="84 0 90" color="#3f6d2d"></a-cylinder>
+        <a-cylinder position="0 2.45 -0.15" radius="0.022" height="2.55" rotation="96 0 90" color="#3f6d2d"></a-cylinder>
+        <a-sphere position="-0.8 2.52 0" radius="0.055" color="#ffb13d" material="emissive: #ff6a00; emissiveIntensity: 0.9"></a-sphere>
+        <a-sphere position="0 2.65 0" radius="0.055" color="#ffb13d" material="emissive: #ff6a00; emissiveIntensity: 0.9"></a-sphere>
+        <a-sphere position="0.8 2.52 0" radius="0.055" color="#ffb13d" material="emissive: #ff6a00; emissiveIntensity: 0.9"></a-sphere>
+      </a-entity>
+
+      <a-entity
+        id="labelShed"
+        position="7.2 3.35 -5.2"
+        canvas-label="text: 花棚与柳枝|Flower shed with willow branches; width: 2.55; height: 0.58"
+        face-camera
+       
+      ></a-entity>
+
+      <a-entity id="materialSelection" position="0 0 -0.55">
+
+        <!-- TABLETOP: thick hammered iron slab -->
+        <a-box position="0 0.55 0" width="3.8" height="0.1" depth="1.4"
+          color="#2a2520" material="metalness: 0.7; roughness: 0.45"></a-box>
+
+        <!-- APRON: slightly recessed skirt under the tabletop -->
+        <a-box position="0 0.45 0" width="3.74" height="0.08" depth="1.26"
+          color="#1f1a16" material="metalness: 0.7; roughness: 0.5"></a-box>
+
+        <!-- 4 SQUARE CAPS where each leg meets the apron -->
+        <a-box position="-1.78 0.41 -0.62" width="0.13" height="0.06" depth="0.13"
+          color="#1f1a16" material="metalness: 0.75; roughness: 0.4"></a-box>
+        <a-box position="1.78 0.41 -0.62" width="0.13" height="0.06" depth="0.13"
+          color="#1f1a16" material="metalness: 0.75; roughness: 0.4"></a-box>
+        <a-box position="-1.78 0.41 0.62" width="0.13" height="0.06" depth="0.13"
+          color="#1f1a16" material="metalness: 0.75; roughness: 0.4"></a-box>
+        <a-box position="1.78 0.41 0.62" width="0.13" height="0.06" depth="0.13"
+          color="#1f1a16" material="metalness: 0.75; roughness: 0.4"></a-box>
+
+        <!-- 4 CYLINDRICAL LEGS at the corners -->
+        <a-cylinder position="-1.78 0.21 -0.62" radius="0.05" height="0.36"
+          color="#2a2520" material="metalness: 0.72; roughness: 0.45"></a-cylinder>
+        <a-cylinder position="1.78 0.21 -0.62" radius="0.05" height="0.36"
+          color="#2a2520" material="metalness: 0.72; roughness: 0.45"></a-cylinder>
+        <a-cylinder position="-1.78 0.21 0.62" radius="0.05" height="0.36"
+          color="#2a2520" material="metalness: 0.72; roughness: 0.45"></a-cylinder>
+        <a-cylinder position="1.78 0.21 0.62" radius="0.05" height="0.36"
+          color="#2a2520" material="metalness: 0.72; roughness: 0.45"></a-cylinder>
+
+        <!-- 4 SQUARE FEET at the bottom of each leg -->
+        <a-box position="-1.78 0.025 -0.62" width="0.14" height="0.05" depth="0.14"
+          color="#1f1a16" material="metalness: 0.7; roughness: 0.5"></a-box>
+        <a-box position="1.78 0.025 -0.62" width="0.14" height="0.05" depth="0.14"
+          color="#1f1a16" material="metalness: 0.7; roughness: 0.5"></a-box>
+        <a-box position="-1.78 0.025 0.62" width="0.14" height="0.05" depth="0.14"
+          color="#1f1a16" material="metalness: 0.7; roughness: 0.5"></a-box>
+        <a-box position="1.78 0.025 0.62" width="0.14" height="0.05" depth="0.14"
+          color="#1f1a16" material="metalness: 0.7; roughness: 0.5"></a-box>
+
+        <!-- BOTTOM STRETCHERS: two long rails along the length, joined by a centre cross-piece -->
+        <a-box position="0 0.11 -0.62" width="3.5" height="0.045" depth="0.05"
+          color="#2a2520" material="metalness: 0.72; roughness: 0.5"></a-box>
+        <a-box position="0 0.11 0.62" width="3.5" height="0.045" depth="0.05"
+          color="#2a2520" material="metalness: 0.72; roughness: 0.5"></a-box>
+        <a-box position="0 0.11 0" width="0.05" height="0.045" depth="1.2"
+          color="#2a2520" material="metalness: 0.72; roughness: 0.5"></a-box>
+
+        <!-- RIVETS on the apron at each corner -->
+        <a-sphere position="-1.72 0.45 -0.635" radius="0.018" color="#4a3e30" material="metalness: 0.85; roughness: 0.35"></a-sphere>
+        <a-sphere position="1.72 0.45 -0.635" radius="0.018" color="#4a3e30" material="metalness: 0.85; roughness: 0.35"></a-sphere>
+        <a-sphere position="-1.72 0.45 0.635" radius="0.018" color="#4a3e30" material="metalness: 0.85; roughness: 0.35"></a-sphere>
+        <a-sphere position="1.72 0.45 0.635" radius="0.018" color="#4a3e30" material="metalness: 0.85; roughness: 0.35"></a-sphere>
+
+        <!-- Row 1: 煨子, 铁钳, 勺子, 木板, 高岭土 (all incorrect/tools) -->
+        <a-entity id="matCrucible" class="clickable material-item" position="-1.4 0.6 -0.35" material-choice="key: crucible; correct: false">
+          <a-entity gltf-model="#crucibleModel" material-model-fit="targetSize: 0.32" shadow="cast: true; receive: true"></a-entity>
+        </a-entity>
+
+        <a-entity id="matTongs" class="clickable material-item" position="-0.7 0.6 -0.35" material-choice="key: tongs; correct: false">
+          <a-entity gltf-model="#tongsModel" material-model-fit="targetSize: 0.34" shadow="cast: true; receive: true"></a-entity>
+        </a-entity>
+
+        <a-entity id="matLadle" class="clickable material-item" position="0 0.6 -0.35" material-choice="key: ladle; correct: false">
+          <a-entity gltf-model="#ladleModel" material-model-fit="targetSize: 0.34" shadow="cast: true; receive: true"></a-entity>
+        </a-entity>
+
+        <a-entity id="matPaddle" class="clickable material-item" position="0.7 0.6 -0.35" material-choice="key: paddle; correct: false">
+          <a-entity obj-model="obj: #paddleModel" material-model-fit="targetSize: 0.34" shadow="cast: true; receive: true"></a-entity>
+        </a-entity>
+
+        <a-entity id="matClay" class="clickable material-item" position="1.4 0.6 -0.35" material-choice="key: clay; correct: false">
+          <a-entity gltf-model="#clayModel" material-model-fit="targetSize: 0.32" shadow="cast: true; receive: true"></a-entity>
+        </a-entity>
+
+        <!-- Row 2: 食盐, 生铁片, 黄铜, 稻草卷, 铁炭 (all correct) -->
+        <a-entity id="matSalt" class="clickable material-item" position="-1.4 0.6 0.32" material-choice="key: salt; correct: true">
+          <a-entity gltf-model="#saltModel" material-model-fit="targetSize: 0.32" shadow="cast: true; receive: true"></a-entity>
+        </a-entity>
+
+        <a-entity id="matRawIron" class="clickable material-item" position="-0.7 0.6 0.32" material-choice="key: rawIron; correct: true">
+          <a-entity gltf-model="#rawIronModel" material-model-fit="targetSize: 0.32" shadow="cast: true; receive: true"></a-entity>
+        </a-entity>
+
+        <a-entity id="matBrass" class="clickable material-item" position="0 0.6 0.32" material-choice="key: brass; correct: true">
+          <a-entity gltf-model="#brassModel" material-model-fit="targetSize: 0.28" shadow="cast: true; receive: true"></a-entity>
+        </a-entity>
+
+        <a-entity id="matStraw" class="clickable material-item" position="0.7 0.6 0.32" material-choice="key: straw; correct: true">
+          <a-entity gltf-model="#strawModel" material-model-fit="targetSize: 0.34" shadow="cast: true; receive: true"></a-entity>
+        </a-entity>
+
+        <a-entity id="matCharcoal" class="clickable material-item" position="1.4 0.6 0.32" material-choice="key: charcoal; correct: true">
+          <a-entity gltf-model="#charcoalModel" material-model-fit="targetSize: 0.28" shadow="cast: true; receive: true"></a-entity>
+        </a-entity>
+      </a-entity>
+
+      <a-entity id="materialProgress" position="0 1.35 -0.55" face-camera>
+        <a-sphere id="matDot1" position="-0.48 0 0" radius="0.055" color="#163a34"></a-sphere>
+        <a-sphere id="matDot2" position="-0.24 0 0" radius="0.055" color="#163a34"></a-sphere>
+        <a-sphere id="matDot3" position="0 0 0" radius="0.055" color="#163a34"></a-sphere>
+        <a-sphere id="matDot4" position="0.24 0 0" radius="0.055" color="#163a34"></a-sphere>
+        <a-sphere id="matDot5" position="0.48 0 0" radius="0.055" color="#163a34"></a-sphere>
+      </a-entity>
+
+      <a-entity id="labelMaterials" position="0 2.05 -0.55" canvas-label="text: 步骤1：了解材料并选择正确材料入炉|待加入：稻草卷、铁炭、生铁片、黄铜、食盐; width: 5.6; height: 1.4" face-camera></a-entity>
+
+      <a-entity id="pathGuides" visible="false">
+        <a-ring id="workbenchRing" position="0 0.012 -0.55" rotation="-90 0 0" radius-inner="0.78" radius-outer="0.84" color="#18d0c4" material="transparent: true; opacity: 0.48"></a-ring>
+        <a-ring id="furnaceRing" position="0 0.012 -4.8" rotation="-90 0 0" radius-inner="0.78" radius-outer="0.84" color="#ff8a1c" material="transparent: true; opacity: 0.48"></a-ring>
+        <a-cylinder id="workbenchConnector" position="0 0.018 -2.675" radius="0.022" height="4.5" rotation="0 0 90" color="#20d4ff" material="transparent: true; opacity: 0.3"></a-cylinder>
+      </a-entity>
+
+      <a-entity id="furnace" position="0 0 -4.8">
+        <!-- BASE: stabilising ring under the body -->
+        <a-cylinder position="0 0.03 0" radius="0.44" height="0.06"
+          color="#2a2520" material="metalness: 0.7; roughness: 0.65"></a-cylinder>
+
+        <!-- OUTER WALL: open-ended hollow body (slimmer + taller) -->
+        <a-cylinder position="0 0.46 0" radius="0.4" height="0.8"
+          color="#3a342e" material="metalness: 0.8; roughness: 0.45; side: double"
+          open-ended="true"></a-cylinder>
+
+        <!-- INNER WALL: smaller, darker interior surface -->
+        <a-cylinder position="0 0.47 0" radius="0.37" height="0.76"
+          color="#15110d" material="metalness: 0.45; roughness: 0.85; side: double"
+          open-ended="true"></a-cylinder>
+
+        <!-- TOP OUTER RIM: brighter polished metal band -->
+        <a-torus position="0 0.86 0" radius="0.4" radius-tubular="0.028"
+          color="#8a8278" material="metalness: 0.88; roughness: 0.32"
+          rotation="90 0 0"></a-torus>
+
+        <!-- TOP INNER RIM EDGE -->
+        <a-torus position="0 0.85 0" radius="0.34" radius-tubular="0.013"
+          color="#544b41" material="metalness: 0.75; roughness: 0.5"
+          rotation="90 0 0"></a-torus>
+
+        <!-- LEFT HANDLE: half-torus opening UP, endpoints land exactly on the outer rim edge
+             Math: sqrt(Cx^2 + R^2) = 0.428 (rim radius 0.4 + tubular 0.028)
+             R=0.15, Cx=0.4009 → distance = sqrt(0.1607+0.0225) = 0.428 ✓ -->
+        <a-torus position="-0.4009 0.86 0" radius="0.15" radius-tubular="0.012"
+          color="#9a9089" material="metalness: 0.9; roughness: 0.3"
+          arc="180" rotation="180 90 0"></a-torus>
+
+        <!-- RIGHT HANDLE: mirror, endpoints land exactly on the outer rim edge -->
+        <a-torus position="0.4009 0.86 0" radius="0.15" radius-tubular="0.012"
+          color="#9a9089" material="metalness: 0.9; roughness: 0.3"
+          arc="180" rotation="180 90 0"></a-torus>
+
+        <!-- INTERIOR BOTTOM PLATE -->
+        <a-cylinder position="0 0.13 0" radius="0.37" height="0.02"
+          color="#0d0a08" material="roughness: 0.85"></a-cylinder>
+
+        <!-- GRATE BARS -->
+        <a-box position="-0.18 0.17 0" width="0.022" height="0.025" depth="0.32"
+          color="#2a2520" material="metalness: 0.85; roughness: 0.6"></a-box>
+        <a-box position="-0.09 0.17 0" width="0.022" height="0.025" depth="0.36"
+          color="#2a2520" material="metalness: 0.85; roughness: 0.6"></a-box>
+        <a-box position="0 0.17 0" width="0.022" height="0.025" depth="0.38"
+          color="#2a2520" material="metalness: 0.85; roughness: 0.6"></a-box>
+        <a-box position="0.09 0.17 0" width="0.022" height="0.025" depth="0.36"
+          color="#2a2520" material="metalness: 0.85; roughness: 0.6"></a-box>
+        <a-box position="0.18 0.17 0" width="0.022" height="0.025" depth="0.32"
+          color="#2a2520" material="metalness: 0.85; roughness: 0.6"></a-box>
+
+        <!-- CHARCOAL/EMBERS through grate -->
+        <a-sphere position="-0.1 0.14 0.06" radius="0.05" color="#1d1915" material="roughness: 0.85"></a-sphere>
+        <a-sphere position="0.08 0.14 -0.08" radius="0.045" color="#2a2520" material="roughness: 0.85"></a-sphere>
+        <a-sphere position="0.06 0.13 0.12" radius="0.038" color="#11100e" material="roughness: 0.85"></a-sphere>
+        <a-sphere position="-0.11 0.14 -0.1" radius="0.042" color="#231f1a" material="roughness: 0.85"></a-sphere>
+        <a-sphere position="0 0.13 -0.02" radius="0.035" color="#0e0d0b" material="roughness: 0.85"></a-sphere>
+
+        <!-- GLOWING EMBER DISC -->
+        <a-cylinder position="0 0.16 0" radius="0.25" height="0.015"
+          color="#ff8a1c"
+          material="emissive: #ff4a00; emissiveIntensity: 1.8; transparent: true; opacity: 0.65"></a-cylinder>
+
+        <!-- POINT LIGHT preserves warm illumination -->
+        <a-light type="point" color="#ff7a1a" intensity="2.2" distance="5"></a-light>
+
+        <!-- MOLTEN LIQUID PUDDLES: 2 flat splatters on the right side of the furnace, plain discs only -->
+        <!-- Puddle 1: large, front-right -->
+        <a-cylinder position="0.62 0.005 0.5" radius="0.16" height="0.008" scale="1.15 1 0.85"
+          color="#ffa53a"
+          material="emissive: #ff5a00; emissiveIntensity: 2.6; transparent: true; opacity: 0.95; metalness: 0.45; roughness: 0.18"></a-cylinder>
+
+        <!-- Puddle 2: medium, back-right -->
+        <a-cylinder position="0.65 0.005 -0.3" radius="0.13" height="0.008" scale="0.95 1 1.2"
+          color="#ffa53a"
+          material="emissive: #ff5a00; emissiveIntensity: 2.6; transparent: true; opacity: 0.95; metalness: 0.45; roughness: 0.18"></a-cylinder>
+      </a-entity>
+
+      <a-entity id="materialPrep" position="0 0 -4.8" visible="false"></a-entity>
+
+      <a-entity id="bellows" position="1.05 0.26 -4.8" rotation="0 -24 0" visible="false">
+        <a-box id="bellowsBody" position="0 0.18 0" width="0.85" height="0.3" depth="0.42"
+          color="#a47340" material="roughness: 0.55"></a-box>
+        <a-box position="0 0.36 0.19" width="0.85" height="0.04" depth="0.04" color="#7e5226"></a-box>
+        <a-box position="0 0.36 -0.19" width="0.85" height="0.04" depth="0.04" color="#7e5226"></a-box>
+        <a-box position="-0.405 0.36 0" width="0.04" height="0.04" depth="0.34" color="#7e5226"></a-box>
+        <a-box position="0.405 0.36 0" width="0.04" height="0.04" depth="0.34" color="#7e5226"></a-box>
+        <a-box position="0 0.36 0" width="0.04" height="0.04" depth="0.34" color="#7e5226"></a-box>
+        <a-box position="-0.21 0.345 0" width="0.34" height="0.005" depth="0.3" color="#1a1108"></a-box>
+        <a-box position="0.21 0.345 0" width="0.34" height="0.005" depth="0.3" color="#1a1108"></a-box>
+        <a-cylinder position="-0.38 0.025 -0.18" radius="0.02" height="0.05"
+          color="#c5a76d" material="metalness: 0.85; roughness: 0.4"></a-cylinder>
+        <a-cylinder position="0.38 0.025 -0.18" radius="0.02" height="0.05"
+          color="#c5a76d" material="metalness: 0.85; roughness: 0.4"></a-cylinder>
+        <a-cylinder position="-0.38 0.025 0.18" radius="0.02" height="0.05"
+          color="#c5a76d" material="metalness: 0.85; roughness: 0.4"></a-cylinder>
+        <a-cylinder position="0.38 0.025 0.18" radius="0.02" height="0.05"
+          color="#c5a76d" material="metalness: 0.85; roughness: 0.4"></a-cylinder>
+        <a-box position="-0.435 0.18 0" width="0.025" height="0.14" depth="0.14"
+          color="#b06a3c" material="metalness: 0.7; roughness: 0.35"></a-box>
+        <a-cylinder position="-0.66 0.18 0" radius="0.045" height="0.42" rotation="0 0 90"
+          color="#b06a3c" material="metalness: 0.75; roughness: 0.3"></a-cylinder>
+        <a-cone position="-0.93 0.18 0" radius-bottom="0.085" radius-top="0.035" height="0.13" rotation="0 0 90"
+          color="#bcc0c4" material="metalness: 0.9; roughness: 0.22"></a-cone>
+        <a-box position="0.46 0.22 0" width="0.04" height="0.18" depth="0.08"
+          color="#a47340" material="roughness: 0.55"></a-box>
+        <a-cylinder id="bellowsDowelTop" position="0.57 0.28 0" radius="0.012" height="0.18" rotation="0 0 90"
+          color="#7a4a1e" material="roughness: 0.6"></a-cylinder>
+        <a-cylinder id="bellowsDowelBottom" position="0.57 0.18 0" radius="0.012" height="0.18" rotation="0 0 90"
+          color="#7a4a1e" material="roughness: 0.6"></a-cylinder>
+        <a-entity id="bellowsHandle" position="0.66 0.22 0">
+          <a-box position="0 0 0" width="0.06" height="0.32" depth="0.1"
+            color="#a47340" material="roughness: 0.55"></a-box>
+        </a-entity>
+      </a-entity>
+
+      <a-entity
+        id="bellowsHotspot"
+        class="clickable"
+        position="1.05 0.55 -4.8"
+        visible="false"
+        geometry="primitive: box; width: 1.25; height: 0.9; depth: 0.8"
+        material="transparent: true; opacity: 0"
+        bellows-step
+      ></a-entity>
+
+      <a-entity id="heatIndicators" position="0 1.22 -4.8" face-camera>
+        <a-sphere id="heatDot1" position="-0.24 0 0" radius="0.055" color="#3b2a1c"></a-sphere>
+        <a-sphere id="heatDot2" position="0 0 0" radius="0.055" color="#3b2a1c"></a-sphere>
+        <a-sphere id="heatDot3" position="0.24 0 0" radius="0.055" color="#3b2a1c"></a-sphere>
+      </a-entity>
+
+      <a-entity
+        id="furnaceHotspot"
+        class="clickable"
+        position="0 0.45 -4.8"
+        geometry="primitive: cylinder; radius: 0.78; height: 0.82"
+        material="transparent: true; opacity: 0"
+        furnace-step
+      ></a-entity>
+
+      <a-entity
+        id="labelFurnace"
+        position="0 1.42 -4.8"
+        canvas-label="text: 2 加热点火|点击风箱升温，保持 1600-1800℃ 绿色温区 5 秒; width: 3.1; height: 0.62"
+        face-camera
+       
+      ></a-entity>
+
+      <a-entity id="heatingProgress" position="0 1.18 -4.8" face-camera>
+        <a-text id="temperatureReadout" value="1200℃｜偏低：点击风箱" align="center" width="5.2" position="0 0.42 0.04" color="#fff4d2" scale="0.52 0.52 0.52"></a-text>
+        <a-box width="1.65" height="0.14" depth="0.035" color="#2a1b0f" material="transparent: true; opacity: 0.86"></a-box>
+        <a-box id="heatTargetZone" position="0.284 0 0.02" width="0.304" height="0.13" depth="0.038" color="#20d482" material="transparent: true; opacity: 0.42; emissive: #20d482; emissiveIntensity: 0.85"></a-box>
+        <a-box id="heatNeedle" position="-0.03 0 0.026" width="0.025" height="0.18" depth="0.045" color="#ff3b1f" material="emissive: #ff3b1f; emissiveIntensity: 0.7"></a-box>
+        <a-box id="heatingFill" position="-0.78 0 0.025" scale="0.01 1 1" width="1.52" height="0.095" depth="0.04" color="#ff9b26" material="emissive: #ff4a00; emissiveIntensity: 1.8"></a-box>
+        <a-text value="1000℃" align="left" width="2.2" position="-0.82 -0.22 0.04" color="#b8a898" scale="0.4 0.4 0.4"></a-text>
+        <a-text value="2000℃" align="right" width="2.2" position="0.82 -0.22 0.04" color="#b8a898" scale="0.4 0.4 0.4"></a-text>
+        <a-text id="heatZoneMinMark" value="1600" align="center" width="1.2" position="0.132 -0.22 0.04" color="#20d482" scale="0.38 0.38 0.38"></a-text>
+        <a-text id="heatZoneMaxMark" value="1800" align="center" width="1.2" position="0.436 -0.22 0.04" color="#20d482" scale="0.38 0.38 0.38"></a-text>
+        <a-text id="heatHoldReadout" value="绿区保持 0.0/5 秒" align="center" width="5.2" position="0 -0.42 0.04" color="#20d482" scale="0.44 0.44 0.44"></a-text>
+      </a-entity>
+
+      <a-entity id="moltenStream" position="0.22 0.28 -4.7" visible="false">
+        <a-cylinder radius="0.035" height="0.82" rotation="72 0 18" color="#fff0ae" material="emissive: #ff4a00; emissiveIntensity: 3.2; transparent: true; opacity: 0.92"></a-cylinder>
+        <a-sphere position="0.18 -0.35 0.06" radius="0.13" color="#ff8a1c" material="emissive: #ff4a00; emissiveIntensity: 2.6"></a-sphere>
+        <a-light type="point" color="#ff6a00" intensity="2.8" distance="4"></a-light>
+      </a-entity>
+
+      <a-entity
+        id="labelMelt"
+        position="0 2.16 -3.4"
+        canvas-label="text: 铁水流出|When heating finishes, molten iron flows from the furnace; width: 3.1; height: 0.62"
+        face-camera
+       
+      ></a-entity>
+
+      <a-entity
+        id="temperaturePanel"
+        position="0 2.38 -4.8"
+        canvas-label="text: 控温融铁|保持 1600-1800℃ 绿色温区 5 秒; width: 3.6; height: 0.66"
+        face-camera
+       
+      ></a-entity>
+
+      <a-entity
+        id="labelBellows"
+        position="1.05 0.98 -4.8"
+        visible="false"
+        canvas-label="text: 拉风箱|点击升温，温度会自然下降; width: 2.6; height: 0.58"
+        face-camera
+       
+      ></a-entity>
+
+      <a-entity id="rhythmGame" position="0 0 -3.5" visible="false">
+        <a-entity id="rhythmTitle" position="0 3.35 0" canvas-label="text: Practice Mode|Pass 4 levels to earn performance qualification; width: 4.6; height: 0.72" face-camera></a-entity>
+        <a-text id="rhythmHud" value="Level 1 / 3  Time 30  Miss 0 / 3" align="center" width="5.4" position="0 2.78 0" color="#fff4d2"></a-text>
+        <a-entity id="rhythmLanes"></a-entity>
+        <a-entity id="rhythmNotes"></a-entity>
+      </a-entity>
+
+      <a-entity id="audienceGroup" position="7.2 0 -5.6" visible="false">
+        <a-text id="audienceReaction" value="Audience waiting..." align="center" width="5.2" position="0 2.55 0" color="#ffd37a"></a-text>
+        <a-entity id="audienceFigures">
+          <a-entity position="-1.8 0.55 0">
+            <a-sphere radius="0.14" color="#f2c087"></a-sphere>
+            <a-cylinder position="0 -0.35 0" radius="0.12" height="0.48" color="#6d2a16"></a-cylinder>
+          </a-entity>
+          <a-entity position="-0.9 0.55 0">
+            <a-sphere radius="0.14" color="#e7b176"></a-sphere>
+            <a-cylinder position="0 -0.35 0" radius="0.12" height="0.48" color="#264761"></a-cylinder>
+          </a-entity>
+          <a-entity position="0 0.55 0">
+            <a-sphere radius="0.14" color="#f2c087"></a-sphere>
+            <a-cylinder position="0 -0.35 0" radius="0.12" height="0.48" color="#7a4d20"></a-cylinder>
+          </a-entity>
+          <a-entity position="0.9 0.55 0">
+            <a-sphere radius="0.14" color="#e7b176"></a-sphere>
+            <a-cylinder position="0 -0.35 0" radius="0.12" height="0.48" color="#315d38"></a-cylinder>
+          </a-entity>
+          <a-entity position="1.8 0.55 0">
+            <a-sphere radius="0.14" color="#f2c087"></a-sphere>
+            <a-cylinder position="0 -0.35 0" radius="0.12" height="0.48" color="#6d2a16"></a-cylinder>
+          </a-entity>
+        </a-entity>
+      </a-entity>
+
+      <a-entity id="fireworks"></a-entity>
+
+      <a-entity
+        id="labelMove"
+        position="0 1.18 0.65"
+        canvas-label="text: 移动探索 / Move freely|Pico 摇杆移动，电脑用 WASD; width: 2.75; height: 0.58"
+        face-camera
+       
+      ></a-entity>
+
+      <a-entity
+        id="languageSwitch"
+        class="clickable"
+        position="1.72 1.92 0.42"
+        geometry="primitive: box; width: 1.08; height: 0.38; depth: 0.08"
+        material="color: #1b1308; transparent: true; opacity: 0.86; emissive: #3a2108; emissiveIntensity: 0.25"
+        face-camera
+       
+        language-switch
+      >
+        <a-plane
+          position="0 0 0.045"
+          width="1.08"
+          height="0.38"
+          color="#1b1308"
+          material="transparent: true; opacity: 0.88; side: double"
+        ></a-plane>
+        <a-ring position="0 0 0.052" radius-inner="0.51" radius-outer="0.525" color="#ffbd42" material="transparent: true; opacity: 0.8"></a-ring>
+        <a-text
+          id="languageSwitchText"
+          value="English"
+          align="center"
+          baseline="center"
+          width="2.25"
+          position="0 0.055 0.062"
+          color="#fff4d2"
+        ></a-text>
+        <a-text
+          id="languageSwitchHint"
+          value="Language"
+          align="center"
+          baseline="center"
+          width="2.1"
+          position="0 -0.105 0.062"
+          color="#ffbd42"
+        ></a-text>
+      </a-entity>
+
+      
+      <a-entity
+        id="vrMaterialPopup"
+        visible="false"
+        position="2.55 1.18 -0.55"
+        face-camera
+        material-popup-dock="side: right; offsetY: 1.18"
+      >
+        <a-plane
+          width="2.12"
+          height="1.62"
+          color="#120804"
+          material="shader: flat; transparent: true; opacity: 0.94; side: double"
+          position="0 0 -0.02"
+        ></a-plane>
+        <a-plane
+          width="2.06"
+          height="1.56"
+          material="shader: flat; transparent: true; opacity: 0.08; color: #ffbd42; side: double"
+          position="0 0 -0.018"
+        ></a-plane>
+        <a-entity
+          id="vrChoiceTitle"
+          position="0 0.52 0.04"
+          canvas-label="text: 材料; width: 1.92; height: 0.34; fontSize: 42; background: rgba(0,0,0,0); border: rgba(0,0,0,0); color: #ffe7a8"
+        ></a-entity>
+        <a-entity
+          id="vrChoiceBody"
+          position="0 0.02 0.04"
+          material-popup-label="text: 说明; width: 1.92; height: 0.92; fontSize: 30; maxLines: 6; color: #ffd39b"
+        ></a-entity>
+        <a-entity
+          id="vrChoiceYes"
+          class="clickable"
+          position="0.36 -0.54 0.08"
+          material-vr-btn="action: confirm; label: 加入; width: 0.82; height: 0.2"
+        ></a-entity>
+        <a-entity
+          id="vrChoiceNo"
+          class="clickable"
+          position="-0.36 -0.54 0.08"
+          material-vr-btn="action: cancel; label: 取消; width: 0.82; height: 0.2"
+        ></a-entity>
+      </a-entity>
+
+      <a-entity id="rig" position="0 0 1.8">
+        <a-camera
+          id="mainCamera"
+          position="0 1.6 0"
+          wasd-controls="enabled: false"
+          look-controls="enabled: true; magicWindowTrackingEnabled: true; pointerLockEnabled: false; mouseEnabled: true"
+        >
+          <a-cursor
+            raycaster="objects: .clickable, .material-item, .material-hitbox, #vrMaterialPopup .clickable; far: 14"
+            cursor="fuse: false"
+            color="#ffd37a"
+            geometry="primitive: ring; radiusInner: 0.012; radiusOuter: 0.019"
+          ></a-cursor>
+        </a-camera>
+
+        <a-entity
+          id="leftHand"
+          laser-controls="hand: left"
+          raycaster="objects: .clickable, .material-item, .material-hitbox, #vrMaterialPopup .clickable; far: 14; interval: 0; showLine: true"
+          cursor="rayOrigin: entity; fuse: false"
+          line="color: #2bd4ff; opacity: 0.55"
+        >
+          <a-entity
+            class="home-hand-cursor"
+            visible="false"
+            position="0 0 -1"
+            geometry="primitive: ring; radiusInner: 0.009; radiusOuter: 0.018"
+            material="color: #ffd37a; shader: flat; opacity: 0.95"
+          ></a-entity>
+        </a-entity>
+
+        <a-entity
+          id="rightHand"
+          laser-controls="hand: right"
+          raycaster="objects: .clickable, .material-item, .material-hitbox, #vrMaterialPopup .clickable; far: 14; interval: 0; showLine: true"
+          cursor="rayOrigin: entity; fuse: false"
+          line="color: #ffb13d; opacity: 0.85"
+        >
+          <a-entity
+            class="home-hand-cursor"
+            visible="false"
+            position="0 0 -1"
+            geometry="primitive: ring; radiusInner: 0.009; radiusOuter: 0.018"
+            material="color: #ffd37a; shader: flat; opacity: 0.95"
+          ></a-entity>
+        </a-entity>
+      </a-entity>
+
+      <a-text
+        id="statusText"
+        value="三步流程：选材料入炉 → 加热点火 → 表演场打铁花"
+        align="center"
+        width="4.3"
+        position="0 2.45 -3.2"
+        color="#fff0c2"
+      ></a-text>
+
+      <a-light type="ambient" color="#404060" intensity="1.15"></a-light>
+      <a-light type="directional" color="#fff2d0" intensity="1.35" position="3 6 2" castShadow="true"></a-light>
+      <a-light type="point" color="#ff9b26" intensity="1.15" distance="12" position="0 2.6 -4.6"></a-light>
+    </a-scene>
+
+    <script src="./js/app-entry.js?v=20260601-entry"></script>
+    <script src="./story-flow.js?v=20260601-prep"></script>
+    <script src="./js/home-nav.js"></script>
+    <script>
+      var pageScene = document.body.dataset.scene || "materials";
+      var pageQuery = new URLSearchParams(window.location.search);
+      var storyMode = pageQuery.get("story") === "1";
+      var WORKBENCH_Z = -0.55;
+      var FURNACE_Z = -4.8;
+      var PREP_SKY_ROTATION = "0 2 0";
+      var MATERIAL_POPUP_SIDE_X = 2.55;
+      var MATERIAL_TABLE_TOP_Y = 0.6;
+      var MATERIAL_HITBOX = {
+        y: 0.16,
+        radius: 0.27,
+        height: 0.32,
+      };
+      var FURNACE_VIEW = {
+        rigX: 0,
+        rigZ: -3.05,
+        cameraY: 1.6,
+      };
+      var REQUIRED_MATERIAL_COUNT = 5;
+
+      var sceneShell = {
+        materials: {
+          title: "准备素材",
+          button: "Start Prepare",
+          hint: "选择材料、控温融铁 / Prepare materials",
+        },
+        practice: {
+          title: "练习场景",
+          button: "Start Practice",
+          hint: "完成四关练习 / Practice levels",
+        },
+        performance: {
+          title: "表演场景",
+          button: "Start Show",
+          hint: "正式打铁花表演 / Performance",
+        },
+        "perform-prep": {
+          title: "表演材料准备",
+          button: "开始准备",
+          hint: "熟悉材料并拉风箱 / Prepare for the show",
+        },
+      };
+
+      function sceneHref(file) {
+        return "./" + file + (storyMode ? "?story=1" : "?mode=level");
+      }
+
+      function goToScene(file) {
+        if (storyMode && window.IronFlowerStory) {
+          window.IronFlowerStory.goToSceneWithStoryBridge(file, true);
+          return;
+        }
+        window.location.href = sceneHref(file);
+      }
+
+      function applySceneShell() {
+        var shell = sceneShell[pageScene] || sceneShell.materials;
+        document.title = shell.title + "｜铜官窑打铁花 VR 体验";
+        document.querySelector(".start-title").textContent = shell.title;
+        document.querySelector("#startButton").textContent = shell.button;
+        document.querySelector(".start-hint").textContent = shell.hint;
+      }
+
+      function setInitialScenePreview() {
+        if (pageScene === "practice") {
+          materialSelectionComplete = true;
+          furnacePrepared = true;
+          moltenIronReady = true;
+          setSceneStep(2);
+          setStatus("练习场景：点击开始后进入四关节奏练习", "Practice scene: click start to enter the four rhythm levels");
+          return;
+        }
+        if (pageScene === "performance") {
+          materialSelectionComplete = true;
+          furnacePrepared = true;
+          moltenIronReady = true;
+          setSceneStep(3);
+          updateAudienceReaction();
+          setStatus("表演场景：点击开始后进入正式打铁花表演", "Performance scene: click start to enter the final Iron Flower show");
+          return;
+        }
+        if (pageScene === "perform-prep") {
+          materialSelectionComplete = false;
+          furnacePrepared = false;
+          performPrepComplete = false;
+          moltenIronReady = false;
+          setSceneStep(1);
+          setStatus(
+            "步骤 1：点击材料查看名称并加入熔炉。正确材料：稻草卷、铁炭、生铁片、黄铜、食盐",
+            "Step 1: Click materials for names and add them. Correct: straw rolls, charcoal, pig iron, brass, salt"
+          );
+          return;
+        }
+        setSceneStep(1);
+        setStatus("步骤 1：点击材料查看功能并选择加入。正确材料：稻草卷、铁炭、生铁片、黄铜、食盐", "Step 1: Click materials to view their function and add them. Correct: straw rolls, charcoal, pig iron, brass, salt");
+      }
+
+      var selectedMaterials = {};
+      var materialSelectionComplete = false;
+      var furnacePrepared = false;
+      var heatingActive = false;
+      var heatingStart = 0;
+      var heatTemperature = 0;
+      var heatHoldTime = 0;
+      var heatLastTick = 0;
+      var heatScaleMin = 1000;
+      var heatScaleMax = 2000;
+      var heatStart = 1200;
+      var heatMin = 1600;
+      var heatMax = 1800;
+      var heatCoolPerSec = 120;
+      var lastHeatingEmber = 0;
+      var bellowsPulls = 0;
+      var bellowsHoldTime = 0;
+      var bellowsHolding = false;
+      var performPrepComplete = false;
+      var PERFORM_PREP_BELLOWS_SECONDS = 3;
+      var moltenIronReady = false;
+      var currentLanguage = "zh";
+      var lastLanguageToggle = 0;
+      var currentSceneStep = 1;
+      var gameStarted = false;
+      var rhythmActive = false;
+      var rhythmMode = "practice";
+      var rhythmLevel = 1;
+      var rhythmStart = 0;
+      var rhythmLastSpawn = 0;
+      var rhythmNotes = [];
+      var rhythmMisses = 0;
+      var rhythmScore = 0;
+      var rhythmEnded = false;
+      var rhythmConfigs = [
+        { lanes: 3, speed: 1.05, spawn: 980, duration: 30000 },
+        { lanes: 4, speed: 1.38, spawn: 820, duration: 30000 },
+        { lanes: 5, speed: 1.72, spawn: 660, duration: 30000 },
+      ];
+
+      var stagedSceneIds = [
+        "workshopBackdrop",
+        "performanceBackdrop",
+        "pathGuides",
+        "kiln-tower",
+        "flowerShed",
+        "labelShed",
+        "materialSelection",
+        "materialProgress",
+        "labelMaterials",
+        "furnace",
+        "materialPrep",
+        "furnaceHotspot",
+        "labelFurnace",
+        "heatingProgress",
+        "moltenStream",
+        "temperaturePanel",
+        "bellows",
+        "bellowsHotspot",
+        "heatIndicators",
+        "labelMelt",
+        "labelBellows",
+        "rhythmGame",
+        "audienceGroup",
+      ];
+
+      var sceneSteps = {
+        1: ["materialSelection", "materialProgress", "labelMaterials", "furnace"],
+        2: ["performanceBackdrop", "rhythmGame"],
+        3: ["performanceBackdrop", "rhythmGame", "audienceGroup", "kiln-tower", "flowerShed", "labelShed"],
+      };
+
+      var sceneStepX = {
+        1: 0,
+        2: 0,
+        3: 7.2,
+      };
+
+      var uiText = {
+        zh: {
+          toggle: "English",
+          title: "铜官窑·打铁花",
+          intro: "点击材料查看名称并加入熔炉；选完后前往熔炉拉风箱 3 秒，再取出铁水。",
+          ladleSmall: "取铁碗和拍板",
+          targetSmall: "瞄准这里泼拍",
+          languageHint: "语言切换",
+          choiceYes: "加入熔炉",
+          choiceNo: "取消",
+          labels: {
+            labelShed: "花棚与柳枝|传统打铁花常设花棚，并用柳枝等材料接住飞溅铁花",
+            labelMaterials: "表演材料|点击名称并加入熔炉",
+            labelFurnace: "熔炉|表演前的最后加热",
+            labelMelt: "铁水流出|铁水已从炉中流出，点击「取出铁水」完成准备",
+            labelBellows: "拉风箱|保持 3 秒完成准备",
+            labelLadle: "3 装入双手工具|左手铁碗承接铁水，右手拿拍板",
+            labelStrike: "打铁花|左手泼出铁水，右手拍开形成散射",
+            labelBloom: "视觉结果|飞散铁粒氧化燃烧，形成铁花",
+            labelMove: "三步流程|Pico 摇杆移动，电脑用 WASD",
+          },
+          extractMolten: {
+            title: "铁水已就绪",
+            text: "表演材料准备完成。取出铁水后，将进入正式表演场景。",
+            button: "取出铁水",
+          },
+        },
+        en: {
+          toggle: "中文",
+          title: "Tongguan Kiln Iron Flower",
+          intro: "Click materials for names and add them; pull bellows for 3 sec, then extract molten iron.",
+          ladleSmall: "Pick up bowl and paddle",
+          targetSmall: "Aim here to pour and slap",
+          languageHint: "Language",
+          choiceYes: "Add to Furnace",
+          choiceNo: "Cancel",
+          labels: {
+            labelShed: "Flower Shed & Willow Branches|A shed with branches catches and frames the flying sparks",
+            labelMaterials: "Performance Materials|See names and add to furnace",
+            labelFurnace: "Furnace|Final heating before the show",
+            labelMelt: "Molten Iron Flows|Click Extract Molten Iron to finish preparation",
+            labelBellows: "Pull Bellows|Hold for 3 seconds to finish",
+            labelLadle: "3 Load Both Tools|Left hand holds bowl, right hand holds paddle",
+            labelStrike: "Perform Iron Flower|Pour with left hand, slap open with right hand",
+            labelBloom: "Visual Result|Iron particles oxidize and burn into flowers",
+            labelMove: "Three-Step Flow|Use Pico joystick, or WASD on desktop",
+          },
+          extractMolten: {
+            title: "Molten Iron Ready",
+            text: "Performance prep is complete. Extract the molten iron to enter the final show.",
+            button: "Extract Molten Iron",
+          },
+        },
+      };
+
+      var labelCanvasSizes = {
+        labelShed: { width: 2.55, height: 0.58 },
+        labelMaterials: { width: 5.6, height: 1.4 },
+        labelFurnace: { width: 3.1, height: 0.62 },
+        labelMelt: { width: 3.1, height: 0.62 },
+        labelBellows: { width: 2.6, height: 0.58 },
+        labelLadle: { width: 2.85, height: 0.66 },
+        labelStrike: { width: 2.85, height: 0.66 },
+        labelBloom: { width: 2.85, height: 0.66 },
+        labelMove: { width: 2.85, height: 0.66 },
+        temperaturePanel: { width: 3.6, height: 0.66 },
+      };
+
+
+      var materialInfo = {
+        crucible: {
+          zh: { name: "煨子", desc: "放置在熔炉中央，用来盛装铁片并承受高温，使铁片熔化成铁水。" },
+          en: { name: "Crucible", desc: "Placed in the center of the furnace to hold iron pieces and withstand high heat until they melt." },
+        },
+        tongs: {
+          zh: { name: "铁钳", desc: "用于夹持勺子或高温器具，辅助表演者安全、稳定地操作铁水。" },
+          en: { name: "Iron Tongs", desc: "Used to hold ladles or hot tools, helping performers handle molten iron safely and steadily." },
+        },
+        ladle: {
+          zh: { name: "勺子", desc: "用于从煨子中舀取铁水，并将铁水抛洒到空中，是连接熔炉与表演动作的关键工具。" },
+          en: { name: "Ladle", desc: "Scoops molten iron from the crucible and throws it into the air, linking the furnace process with the performance action." },
+        },
+        paddle: {
+          zh: { name: "木板", desc: "用来击打抛出的铁水，使铁水在空中散开并形成铁花效果。" },
+          en: { name: "Wooden Paddle", desc: "Strikes the thrown molten iron, scattering it in the air to create the iron flower effect." },
+        },
+        clay: {
+          zh: { name: "高岭土", desc: "用于制作煨子和勺子，耐高温且较稳定，不易与铁水发生反应。" },
+          en: { name: "Kaolin Clay", desc: "Used to make crucibles and ladles; it resists high temperatures and remains stable with molten iron." },
+        },
+        salt: {
+          zh: { name: "食盐", desc: "加入铁水中可增强铁水流动性，使铁花更容易散开，提升视觉效果。" },
+          en: { name: "Salt", desc: "Added to molten iron to improve fluidity, helping the sparks spread more widely and look brighter." },
+        },
+        rawIron: {
+          zh: { name: "生铁片", desc: "制作铁水的主要原料，经高温熔化后形成可用于打铁花的铁水。" },
+          en: { name: "Pig Iron Pieces", desc: "The main raw material for molten iron; it melts at high temperature and becomes the base of the performance." },
+        },
+        brass: {
+          zh: { name: "黄铜", desc: "加入铁水中可改变铁花颜色，使火花呈现偏红或更丰富的色彩。" },
+          en: { name: "Brass", desc: "Added to molten iron to change spark color, often creating warmer or reddish tones." },
+        },
+        straw: {
+          zh: { name: "稻草卷", desc: "用于引火，放在煨子周围帮助点燃燃料，使炉内温度逐步升高。" },
+          en: { name: "Straw Rolls", desc: "Used as kindling around the crucible to ignite the fuel and help raise the furnace temperature." },
+        },
+        charcoal: {
+          zh: { name: "铁炭", desc: "作为燃料燃烧供热，将生铁片加热并熔化成可击打的铁水。" },
+          en: { name: "Fuel Coal / Charcoal", desc: "Burns as fuel to provide heat, melting pig iron pieces into molten iron for striking." },
+        },
+        furnace: {
+          zh: { name: "熔炉", desc: "用于熔化铁片，是打铁花表演中产生铁水的核心设备。" },
+          en: { name: "Furnace", desc: "Melts iron pieces into molten iron; it is the core equipment of the iron flower performance." },
+        },
+      };
+
+      var pendingChoice = null;
+
+      var currentStatus = {
+        zh: "三步流程：选材料入炉 → 加热点火 → 表演场打铁花",
+        en: "Three-step flow: materials into furnace -> heat and ignite -> perform Iron Flower.",
+      };
+
+      function setStatus(zh, en) {
+        currentStatus = { zh: zh, en: en || zh };
+        var statusText = document.querySelector("#statusText");
+        if (statusText) statusText.setAttribute("value", currentStatus[currentLanguage]);
+      }
+
+      function applyLanguage() {
+        var text = uiText[currentLanguage];
+        document.documentElement.lang = currentLanguage === "zh" ? "zh-CN" : "en";
+        document.querySelector("#langToggle").textContent = text.toggle;
+        document.querySelector("#overlayTitle").textContent = text.title;
+        document.querySelector("#overlayIntro").textContent = text.intro;
+        document.querySelector("#statusText").setAttribute("value", currentStatus[currentLanguage]);
+        document.querySelector("#languageSwitchText").setAttribute("value", text.toggle);
+        document.querySelector("#languageSwitchHint").setAttribute("value", text.languageHint);
+
+        Object.keys(text.labels).forEach(function (id) {
+          var label = document.querySelector("#" + id);
+          if (!label) return;
+          var size = labelCanvasSizes[id] || { width: 2.85, height: 0.66 };
+          label.setAttribute(
+            "canvas-label",
+            "text: " + text.labels[id] + "; width: " + size.width + "; height: " + size.height
+          );
+        });
+
+        var tempPanel = document.querySelector("#temperaturePanel");
+        if (tempPanel) {
+          var panelSize = labelCanvasSizes.temperaturePanel;
+          var panelText =
+            pageScene === "perform-prep"
+              ? (currentLanguage === "en" ? "Bellows Prep|Hold for 3 seconds" : "拉风箱准备|保持 3 秒")
+              : (currentLanguage === "en"
+                ? "Temperature Control|Hold 1600-1800℃ green zone for 5 sec"
+                : "控温融铁|保持 1600-1800℃ 绿色温区 5 秒");
+          tempPanel.setAttribute(
+            "canvas-label",
+            "text: " + panelText + "; width: " + panelSize.width + "; height: " + panelSize.height
+          );
+        }
+        refreshChoicePanelLanguage();
+        if (window.IronFlowerHomeNav) window.IronFlowerHomeNav.applyLanguage(currentLanguage);
+        updateExtractMoltenModalText();
+      }
+
+      function updateExtractMoltenModalText() {
+        var copy = uiText[currentLanguage].extractMolten;
+        var title = document.querySelector("#extractMoltenTitle");
+        var text = document.querySelector("#extractMoltenText");
+        var button = document.querySelector("#extractMoltenBtn");
+        if (title) title.textContent = copy.title;
+        if (text) text.textContent = copy.text;
+        if (button) button.textContent = copy.button;
+      }
+
+      function showExtractMoltenModal() {
+        var modal = document.querySelector("#extractMoltenModal");
+        if (!modal || modal.classList.contains("show")) return;
+        updateExtractMoltenModalText();
+        modal.classList.add("show");
+        if (pageScene === "perform-prep") {
+          setStatus("铁水已就绪：点击「取出铁水」进入正式表演", "Molten iron is ready: click Extract Molten Iron to enter the show");
+          return;
+        }
+        setStatus("铁水已就绪：点击「取出铁水」完成材料准备", "Molten iron is ready: click Extract Molten Iron to finish preparation");
+      }
+
+      function hideExtractMoltenModal() {
+        var modal = document.querySelector("#extractMoltenModal");
+        if (modal) modal.classList.remove("show");
+      }
+
+      function finishMaterialPrep() {
+        if (!moltenIronReady) return;
+        hideExtractMoltenModal();
+        if (pageScene === "perform-prep") {
+          setStatus("取出铁水：即将进入正式表演", "Extracting molten iron: entering the performance");
+          goToScene("scene-performance.html");
+          return;
+        }
+        setStatus("取出铁水：即将进入练习场景", "Extracting molten iron: entering the practice scene");
+        goToScene("scene-practice.html");
+      }
+
+      function toggleLanguage() {
+        var now = performance.now();
+        if (now - lastLanguageToggle < 250) return;
+        lastLanguageToggle = now;
+        currentLanguage = currentLanguage === "zh" ? "en" : "zh";
+        applyLanguage();
+        updateHeatZoneLabels();
+      }
+
+      function formatTempCelsius(temp) {
+        return Math.round(temp) + "℃";
+      }
+
+      function heatToBarX(temp) {
+        return -0.825 + heatToProgress(temp) * 1.65;
+      }
+
+      function heatToProgress(temp) {
+        return Math.min(1, Math.max(0, (temp - heatScaleMin) / (heatScaleMax - heatScaleMin)));
+      }
+
+      function getHeatState(temp) {
+        if (temp > heatMax) return { zh: "过热：暂停拉风箱", en: "Too hot: pause bellows" };
+        if (temp >= heatMin && temp <= heatMax) return { zh: "合适：保持节奏", en: "Good: keep steady" };
+        return { zh: "偏低：点击风箱", en: "Too low: pull bellows" };
+      }
+
+      function getGreenZoneHoldText(hold) {
+        if (pageScene === "perform-prep") {
+          return getPerformPrepHoldText(hold);
+        }
+        if (currentLanguage === "en") {
+          return "Green zone hold " + hold.toFixed(1) + "/5 sec";
+        }
+        return "绿区保持 " + hold.toFixed(1) + "/5 秒";
+      }
+
+      function getPerformPrepHoldText(hold) {
+        var value = Math.min(PERFORM_PREP_BELLOWS_SECONDS, hold);
+        if (currentLanguage === "en") {
+          return "Bellows hold " + value.toFixed(1) + "/" + PERFORM_PREP_BELLOWS_SECONDS + " sec";
+        }
+        return "拉风箱 " + value.toFixed(1) + "/" + PERFORM_PREP_BELLOWS_SECONDS + " 秒";
+      }
+
+      function startPerformPrepBellows() {
+        if (pageScene !== "perform-prep") return;
+        performPrepComplete = false;
+        bellowsHoldTime = 0;
+        bellowsHolding = false;
+        heatingActive = true;
+        heatTemperature = heatStart;
+        heatLastTick = performance.now();
+        var furnace = document.querySelector("#furnace");
+        var readout = document.querySelector("#temperatureReadout");
+        var holdReadout = document.querySelector("#heatHoldReadout");
+        if (readout) {
+          readout.setAttribute("value", getPerformPrepHoldText(0));
+          readout.setAttribute("color", "#ffd37a");
+        }
+        if (holdReadout) {
+          holdReadout.setAttribute("value", getPerformPrepHoldText(0));
+          holdReadout.setAttribute("color", "#ffd37a");
+        }
+        ["bellows", "bellowsHotspot", "labelBellows", "labelFurnace"].forEach(function (id) {
+          var node = document.querySelector("#" + id);
+          if (node) node.setAttribute("visible", "true");
+        });
+        if (furnace) {
+          addFurnaceGlow(furnace, 2.2, "#ff8a1c");
+          createFurnaceFireEmoji(furnace, 2);
+        }
+      }
+
+      function updatePerformPrepBellows(dt) {
+        if (pageScene !== "perform-prep" || performPrepComplete) return;
+        if (bellowsHolding) {
+          bellowsHoldTime += dt;
+          if (Math.random() < 0.18) animateBellows();
+          if (Math.random() < 0.12) createFurnaceFireEmoji(document.querySelector("#furnace"), 1);
+        }
+        var readout = document.querySelector("#temperatureReadout");
+        var holdReadout = document.querySelector("#heatHoldReadout");
+        var heatColor = bellowsHoldTime >= PERFORM_PREP_BELLOWS_SECONDS ? "#20d482" : "#ffd37a";
+        if (readout) {
+          readout.setAttribute("value", getPerformPrepHoldText(bellowsHoldTime));
+          readout.setAttribute("color", heatColor);
+        }
+        if (holdReadout) {
+          holdReadout.setAttribute("value", getPerformPrepHoldText(bellowsHoldTime));
+          holdReadout.setAttribute("color", heatColor);
+        }
+        if (bellowsHolding || bellowsHoldTime > 0) {
+          setStatus(
+            "拉风箱 " + Math.min(PERFORM_PREP_BELLOWS_SECONDS, bellowsHoldTime).toFixed(1) + "/" + PERFORM_PREP_BELLOWS_SECONDS + " 秒",
+            "Bellows " + Math.min(PERFORM_PREP_BELLOWS_SECONDS, bellowsHoldTime).toFixed(1) + "/" + PERFORM_PREP_BELLOWS_SECONDS + " sec"
+          );
+        }
+        if (bellowsHoldTime >= PERFORM_PREP_BELLOWS_SECONDS) {
+          completePerformPrep();
+        }
+      }
+
+      function completePerformPrep() {
+        if (performPrepComplete) return;
+        performPrepComplete = true;
+        bellowsHolding = false;
+        heatingActive = false;
+        moltenIronReady = true;
+        var furnace = document.querySelector("#furnace");
+        var stream = document.querySelector("#moltenStream");
+        if (stream) stream.setAttribute("visible", "true");
+        if (furnace) {
+          addFurnaceGlow(furnace, 4.8, "#ffb13d");
+          createFurnaceFireEmoji(furnace, 4);
+        }
+        ["bellows", "bellowsHotspot", "labelBellows"].forEach(function (id) {
+          var node = document.querySelector("#" + id);
+          if (node) node.setAttribute("visible", "false");
+        });
+        setSceneStep(1);
+        showExtractMoltenModal();
+      }
+
+      function beginBellowsHold() {
+        if (pageScene !== "perform-prep" || performPrepComplete) return;
+        bellowsHolding = true;
+        if (!heatingActive) startPerformPrepBellows();
+      }
+
+      function endBellowsHold() {
+        bellowsHolding = false;
+      }
+
+      function getActiveSceneStepIds(step) {
+        if (pageScene !== "perform-prep" || step !== 1) {
+          return sceneSteps[step] || [];
+        }
+        if (!materialSelectionComplete) {
+          return ["materialSelection", "materialProgress", "labelMaterials", "furnace"];
+        }
+        if (!moltenIronReady) {
+          return [
+            "furnace",
+            "heatingProgress",
+            "temperaturePanel",
+            "bellows",
+            "bellowsHotspot",
+            "labelBellows",
+            "labelFurnace",
+          ];
+        }
+        return ["furnace", "heatingProgress", "temperaturePanel", "moltenStream", "labelMelt"];
+      }
+
+      function focusOnFurnaceView() {
+        var rig = document.querySelector("#rig");
+        var camera = document.querySelector("#mainCamera");
+        if (!rig || !camera) return;
+        rig.setAttribute("position", FURNACE_VIEW.rigX + " 0 " + FURNACE_VIEW.rigZ);
+        camera.setAttribute("position", "0 " + FURNACE_VIEW.cameraY + " 0");
+        camera.setAttribute("rotation", "0 0 0");
+        var materialSelection = document.querySelector("#materialSelection");
+        if (materialSelection) materialSelection.setAttribute("visible", "false");
+        ["materialProgress", "labelMaterials"].forEach(function (id) {
+          var node = document.querySelector("#" + id);
+          if (node) node.setAttribute("visible", "false");
+        });
+        setSceneStep(1);
+        startPerformPrepBellows();
+        applyMaterialVrView();
+      }
+
+      function updateHeatZoneLabels() {
+        var holdReadout = document.querySelector("#heatHoldReadout");
+        if (holdReadout && heatingActive) {
+          holdReadout.setAttribute("value", getGreenZoneHoldText(heatHoldTime));
+        }
+      }
+
+      function resumeMaterialsHeatingPhase() {
+        materialSelectionComplete = true;
+        selectedMaterials = { rawIron: true, charcoal: true, straw: true, brass: true, salt: true };
+        updateMaterialProgress();
+        document.querySelectorAll(".material-item").forEach(function (item) {
+          item.classList.remove("clickable");
+        });
+        var materialSelection = document.querySelector("#materialSelection");
+        if (materialSelection) materialSelection.setAttribute("visible", "false");
+        setSceneStep(1);
+        startHeatingFurnace(document.querySelector("#furnace"));
+      }
+
+      function startGame() {
+        if (gameStarted) return;
+        gameStarted = true;
+        document.body.classList.add("game-started");
+        if (pageScene === "practice") {
+          materialSelectionComplete = true;
+          furnacePrepared = true;
+          moltenIronReady = true;
+          setSceneStep(2);
+          startPracticeLevel(1);
+          return;
+        }
+        if (pageScene === "performance") {
+          materialSelectionComplete = true;
+          furnacePrepared = true;
+          moltenIronReady = true;
+          setSceneStep(3);
+          startPerformanceShow();
+          return;
+        }
+        if (pageScene === "perform-prep") {
+          materialSelectionComplete = false;
+          furnacePrepared = false;
+          performPrepComplete = false;
+          moltenIronReady = false;
+          setSceneStep(1);
+          setStatus(
+            "步骤 1：点击材料查看名称并加入熔炉。正确材料：稻草卷、铁炭、生铁片、黄铜、食盐",
+            "Step 1: Click materials for names and add them. Correct: straw rolls, charcoal, pig iron, brass, salt"
+          );
+          return;
+        }
+        if (storyMode && pageQuery.get("phase") === "heating") {
+          setSceneStep(1);
+          resumeMaterialsHeatingPhase();
+          return;
+        }
+        setSceneStep(1);
+        setStatus("步骤 1：点击材料查看功能并选择加入。正确材料：稻草卷、铁炭、生铁片、黄铜、食盐", "Step 1: Click materials to view their function and add them. Correct: straw rolls, charcoal, pig iron, brass, salt");
+      }
+
+      function setSceneStep(step) {
+        currentSceneStep = step;
+
+        stagedSceneIds.forEach(function (id) {
+          var node = document.querySelector("#" + id);
+          if (node) node.setAttribute("visible", "false");
+        });
+
+        (getActiveSceneStepIds(step) || []).forEach(function (id) {
+          var node = document.querySelector("#" + id);
+          if (node) node.setAttribute("visible", "true");
+        });
+
+        switchEnvironment(step);
+        document.querySelector("#pathGuides").setAttribute("visible", step === 1 && !materialSelectionComplete ? "true" : "false");
+        document.querySelector("#fireworks").setAttribute("visible", "true");
+        document.querySelector("#labelMove").setAttribute("visible", "false");
+        document.querySelector("#languageSwitch").setAttribute("visible", "true");
+        updateSceneHudPosition(step);
+      }
+
+      function switchEnvironment(step) {
+        var sky = document.querySelector("#environmentSky");
+        var workshopBackdrop = document.querySelector("#workshopBackdrop");
+        var performanceBackdrop = document.querySelector("#performanceBackdrop");
+        if (!sky) return;
+
+        if (step === 1) {
+          sky.setAttribute("local-texture-sky", "src: #prepareBg");
+          sky.setAttribute("rotation", PREP_SKY_ROTATION);
+          if (workshopBackdrop) workshopBackdrop.setAttribute("visible", "false");
+          if (performanceBackdrop) performanceBackdrop.setAttribute("visible", "false");
+        } else {
+          sky.setAttribute("local-texture-sky", "src: #performanceBg");
+          sky.setAttribute("rotation", "0 -82 0");
+          if (workshopBackdrop) workshopBackdrop.setAttribute("visible", "false");
+          if (performanceBackdrop) performanceBackdrop.setAttribute("visible", "false");
+        }
+      }
+
+      function updateSceneHudPosition(step) {
+        var x = sceneStepX[step] || 0;
+        var rig = document.querySelector("#rig");
+        var statusText = document.querySelector("#statusText");
+        var labelMove = document.querySelector("#labelMove");
+        var languageSwitch = document.querySelector("#languageSwitch");
+
+        if (statusText) statusText.setAttribute("position", "0 2.45 -3.2");
+        if (labelMove) labelMove.setAttribute("position", "0 1.18 0.65");
+        if (languageSwitch) languageSwitch.setAttribute("position", "1.72 1.92 0.42");
+        var rhythmGame = document.querySelector("#rhythmGame");
+        if (rhythmGame) rhythmGame.setAttribute("position", "0 0 -3.5");
+        applyMaterialVrView();
+      }
+
+      function applyMaterialVrView() {
+        var scene = document.querySelector("a-scene");
+        var inVr = scene && scene.is && scene.is("vr-mode");
+        var rig = document.querySelector("#rig");
+        var camera = document.querySelector("#mainCamera");
+        if (!rig || !camera) return;
+
+        var materialPickPhase =
+          inVr && currentSceneStep === 1 && gameStarted &&
+          !materialSelectionComplete;
+        var furnaceViewPhase =
+          pageScene === "perform-prep" && materialSelectionComplete && gameStarted;
+
+        if (materialPickPhase) {
+          // 站在工作台前，便于 Pico 手柄水平射线命中材料
+          rig.setAttribute("position", "0 0 0.95");
+          camera.setAttribute("position", "0 1.6 0");
+          camera.setAttribute("rotation", "0 0 0");
+        } else if (furnaceViewPhase) {
+          rig.setAttribute("position", FURNACE_VIEW.rigX + " 0 " + FURNACE_VIEW.rigZ);
+          camera.setAttribute("position", "0 " + FURNACE_VIEW.cameraY + " 0");
+          camera.setAttribute("rotation", "0 0 0");
+        } else {
+          rig.setAttribute("position", "0 0 1.8");
+          camera.setAttribute("position", "0 1.6 0");
+          camera.setAttribute("rotation", "0 0 0");
+        }
+      }
+
+      AFRAME.registerComponent("material-popup-label", {
+        schema: {
+          text: { default: "" },
+          width: { default: 1.92 },
+          height: { default: 0.92 },
+          fontSize: { default: 30 },
+          color: { default: "#ffd39b" },
+          maxLines: { default: 6 },
+        },
+
+        init: function () {
+          this.drawLabel();
+        },
+
+        update: function () {
+          this.drawLabel();
+        },
+
+        drawLabel: function () {
+          var canvas = document.createElement("canvas");
+          var context = canvas.getContext("2d");
+          var scale = 3;
+          var canvasW = 960;
+          var canvasH = 420;
+          canvas.width = Math.round(canvasW * scale);
+          canvas.height = Math.round(canvasH * scale);
+          context.scale(scale, scale);
+          context.textAlign = "center";
+          context.textBaseline = "middle";
+          context.fillStyle = this.data.color;
+          context.font = "400 " + this.data.fontSize + "px Arial, PingFang SC, Microsoft YaHei, sans-serif";
+          this.wrapText(context, this.data.text || "", canvasW / 2, canvasH / 2 - 12, canvasW - 72, 38, this.data.maxLines);
+
+          var texture = new THREE.CanvasTexture(canvas);
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.needsUpdate = true;
+          texture.minFilter = THREE.LinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+
+          if (this.mesh) {
+            this.el.object3D.remove(this.mesh);
+            this.mesh.geometry.dispose();
+            this.mesh.material.map.dispose();
+            this.mesh.material.dispose();
+          }
+
+          var geometry = new THREE.PlaneGeometry(this.data.width, this.data.height);
+          var material = new THREE.MeshBasicMaterial({
+            map: texture,
+            transparent: true,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+            toneMapped: false,
+          });
+          this.mesh = new THREE.Mesh(geometry, material);
+          this.el.object3D.add(this.mesh);
+        },
+
+        wrapText: function (context, text, x, y, maxWidth, lineHeight, maxLines) {
+          var tokens = text.match(/[\u4e00-\u9fff]|[^\s\u4e00-\u9fff]+/g) || [text];
+          var lines = [];
+          var line = "";
+          tokens.forEach(function (token) {
+            var separator = /[\u4e00-\u9fff]/.test(token) ? "" : " ";
+            var testLine = line ? line + separator + token : token;
+            if (context.measureText(testLine).width > maxWidth && line) {
+              lines.push(line);
+              line = token;
+            } else {
+              line = testLine;
+            }
+          });
+          if (line) lines.push(line);
+          var visible = lines.slice(0, maxLines);
+          var startY = y - ((visible.length - 1) * lineHeight) / 2;
+          visible.forEach(function (lineText, index) {
+            var output = lineText;
+            if (index === maxLines - 1 && lines.length > maxLines) output = lineText.replace(/\s+$/, "") + "...";
+            context.fillText(output, x, startY + index * lineHeight, maxWidth);
+          });
+        },
+      });
+
+      AFRAME.registerComponent("material-vr-btn", {
+        schema: {
+          action: { default: "" },
+          label: { default: "" },
+          width: { default: 0.82 },
+          height: { default: 0.2 },
+        },
+
+        init: function () {
+          this._hovered = false;
+          this.onActivate = this.onActivate.bind(this);
+          this.onHoverStart = this.onHoverStart.bind(this);
+          this.onHoverEnd = this.onHoverEnd.bind(this);
+          this.el.classList.add("clickable");
+          this.el.addEventListener("click", this.onActivate);
+          this.el.addEventListener("mouseenter", this.onHoverStart);
+          this.el.addEventListener("mouseleave", this.onHoverEnd);
+          this.drawButton();
+        },
+
+        update: function () {
+          this.drawButton();
+        },
+
+        remove: function () {
+          this.el.removeEventListener("click", this.onActivate);
+          this.el.removeEventListener("mouseenter", this.onHoverStart);
+          this.el.removeEventListener("mouseleave", this.onHoverEnd);
+          this.disposeMesh();
+        },
+
+        onHoverStart: function () {
+          if (this._hovered) return;
+          this._hovered = true;
+          this.el.object3D.scale.set(1.08, 1.08, 1.08);
+          this.el.object3D.position.z = 0.028;
+          this.drawButton();
+        },
+
+        onHoverEnd: function () {
+          if (!this._hovered) return;
+          this._hovered = false;
+          this.el.object3D.scale.set(1, 1, 1);
+          this.el.object3D.position.z = 0;
+          this.drawButton();
+        },
+
+        onActivate: function () {
+          var now = performance.now();
+          if (this._lastActivate && now - this._lastActivate < 320) return;
+          this._lastActivate = now;
+          if (this.data.action === "confirm") confirmChoice();
+          else if (this.data.action === "cancel") closeChoicePanel();
+        },
+
+        disposeMesh: function () {
+          if (this.mesh) {
+            this.el.object3D.remove(this.mesh);
+            this.mesh.geometry.dispose();
+            if (this.mesh.material.map) this.mesh.material.map.dispose();
+            this.mesh.material.dispose();
+            this.mesh = null;
+          }
+          if (this.hitMesh) {
+            this.el.object3D.remove(this.hitMesh);
+            this.hitMesh.geometry.dispose();
+            this.hitMesh.material.dispose();
+            this.hitMesh = null;
+          }
+        },
+
+        drawButton: function () {
+          var canvas = document.createElement("canvas");
+          var context = canvas.getContext("2d");
+          var scale = 3;
+          var canvasW = 640;
+          var canvasH = 160;
+          canvas.width = Math.round(canvasW * scale);
+          canvas.height = Math.round(canvasH * scale);
+          context.scale(scale, scale);
+          var hovered = !!this._hovered;
+          var isCancel = this.data.action === "cancel";
+          context.fillStyle = hovered
+            ? (isCancel ? "rgba(255, 255, 255, 0.24)" : "rgba(255, 189, 66, 0.42)")
+            : (isCancel ? "rgba(255, 255, 255, 0.12)" : "rgba(255, 189, 66, 0.24)");
+          context.strokeStyle = hovered
+            ? (isCancel ? "rgba(255, 255, 255, 0.88)" : "rgba(255, 224, 161, 0.98)")
+            : (isCancel ? "rgba(255, 255, 255, 0.42)" : "rgba(255, 224, 161, 0.72)");
+          context.lineWidth = hovered ? 4 : 3;
+          this.roundRect(context, 8, 8, canvasW - 16, canvasH - 16, 14);
+          context.fill();
+          context.stroke();
+          context.textAlign = "center";
+          context.textBaseline = "middle";
+          context.fillStyle = isCancel ? "#fff4d2" : "#fff8ce";
+          context.font = "800 42px Arial, PingFang SC, Microsoft YaHei, sans-serif";
+          context.fillText(this.data.label || "", canvasW / 2, canvasH / 2, canvasW - 48);
+
+          var texture = new THREE.CanvasTexture(canvas);
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.needsUpdate = true;
+          texture.minFilter = THREE.LinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+          this.disposeMesh();
+
+          var geometry = new THREE.PlaneGeometry(this.data.width, this.data.height);
+          var material = new THREE.MeshBasicMaterial({
+            map: texture,
+            transparent: true,
+            side: THREE.DoubleSide,
+            toneMapped: false,
+          });
+          this.mesh = new THREE.Mesh(geometry, material);
+          this.mesh.renderOrder = 12;
+          this.el.object3D.add(this.mesh);
+
+          var hitGeometry = new THREE.PlaneGeometry(this.data.width * 1.45, this.data.height * 1.5);
+          var hitMaterial = new THREE.MeshBasicMaterial({
+            transparent: true,
+            opacity: 0.001,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+            toneMapped: false,
+          });
+          this.hitMesh = new THREE.Mesh(hitGeometry, hitMaterial);
+          this.hitMesh.position.z = 0.012;
+          this.hitMesh.renderOrder = 14;
+          this.hitMesh.userData.clickableEl = this.el;
+          this.el.object3D.add(this.hitMesh);
+        },
+
+        roundRect: function (context, x, y, width, height, radius) {
+          context.beginPath();
+          context.moveTo(x + radius, y);
+          context.lineTo(x + width - radius, y);
+          context.quadraticCurveTo(x + width, y, x + width, y + radius);
+          context.lineTo(x + width, y + height - radius);
+          context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+          context.lineTo(x + radius, y + height);
+          context.quadraticCurveTo(x, y + height, x, y + height - radius);
+          context.lineTo(x, y + radius);
+          context.quadraticCurveTo(x, y, x + radius, y);
+          context.closePath();
+        },
+      });
+
+      AFRAME.registerComponent("materials-vr-ui", {
+        schema: {
+          debounceMs: { default: 280 },
+        },
+
+        init: function () {
+          this.raycaster = new THREE.Raycaster();
+          this.lastAt = 0;
+          this._hoverTarget = null;
+          this._hoverHand = null;
+          this.handEvents = ["triggerdown", "gripdown", "abuttondown", "bbuttondown", "xbuttondown", "ybuttondown", "selectstart"];
+          this.onEnterVr = this.onEnterVr.bind(this);
+          this.onExitVr = this.onExitVr.bind(this);
+          this.onHandSelect = this.onHandSelect.bind(this);
+          this.onSessionSelect = this.onSessionSelect.bind(this);
+          this.onHandIntersection = this.onHandIntersection.bind(this);
+          this.onHandIntersectionCleared = this.onHandIntersectionCleared.bind(this);
+          this.el.addEventListener("enter-vr", this.onEnterVr);
+          this.el.addEventListener("exit-vr", this.onExitVr);
+          if (this.el.is("vr-mode")) this.onEnterVr();
+        },
+
+        onEnterVr: function () {
+          var self = this;
+          this.bindHands();
+          this.bindHandRaycasters();
+          this.bindSession();
+          requestAnimationFrame(function () {
+            self.refreshRaycasters();
+          });
+          window.setTimeout(function () {
+            self.bindHands();
+            self.bindHandRaycasters();
+            self.bindSession();
+            self.refreshRaycasters();
+          }, 240);
+        },
+
+        onExitVr: function () {
+          this.setHoverTarget(null, null);
+          this.updateHandHoverVisual(null, null);
+        },
+
+        bindHands: function () {
+          var self = this;
+          ["#leftHand", "#rightHand"].forEach(function (selector) {
+            var hand = document.querySelector(selector);
+            if (!hand || hand.__materialsVrUiBound) return;
+            hand.__materialsVrUiBound = true;
+            self.handEvents.forEach(function (eventName) {
+              hand.addEventListener(eventName, function () {
+                self.onHandSelect(hand);
+              });
+            });
+          });
+        },
+
+        bindHandRaycasters: function () {
+          var self = this;
+          ["#leftHand", "#rightHand"].forEach(function (selector) {
+            var hand = document.querySelector(selector);
+            if (!hand || hand.__materialsVrRayBound) return;
+            hand.__materialsVrRayBound = true;
+            hand.addEventListener("raycaster-intersection", self.onHandIntersection);
+            hand.addEventListener("raycaster-intersection-cleared", self.onHandIntersectionCleared);
+          });
+        },
+
+        bindSession: function () {
+          var renderer = this.el.renderer;
+          var session = renderer && renderer.xr && renderer.xr.getSession && renderer.xr.getSession();
+          if (!session || session.__materialsVrUiSessionBound) return;
+          session.__materialsVrUiSessionBound = true;
+          session.addEventListener("select", this.onSessionSelect);
+        },
+
+        onSessionSelect: function (event) {
+          var hand = this.findHandFromInputEvent(event) || document.querySelector("#rightHand") || document.querySelector("#leftHand");
+          if (hand) this.onHandSelect(hand);
+        },
+
+        findHandFromInputEvent: function (event) {
+          if (!event || !event.inputSource || !event.inputSource.handedness) return null;
+          if (event.inputSource.handedness === "right") return document.querySelector("#rightHand");
+          if (event.inputSource.handedness === "left") return document.querySelector("#leftHand");
+          return null;
+        },
+
+        onHandIntersection: function (event) {
+          if (!this.el.is("vr-mode")) return;
+          var els = event.detail && event.detail.els;
+          if (!els || !els.length) return;
+          for (var i = 0; i < els.length; i += 1) {
+            var target = this.resolveTarget(els[i]);
+            if (target) {
+              this.setHoverTarget(target, event.target);
+              return;
+            }
+          }
+        },
+
+        onHandIntersectionCleared: function (event) {
+          if (!this.el.is("vr-mode")) return;
+          if (this._hoverHand && event.target !== this._hoverHand) return;
+          var rightHand = document.querySelector("#rightHand");
+          var leftHand = document.querySelector("#leftHand");
+          var target = this.raycastFromHand(rightHand);
+          var hand = target ? rightHand : null;
+          if (!target) {
+            target = this.raycastFromHand(leftHand);
+            hand = target ? leftHand : null;
+          }
+          this.setHoverTarget(target, hand);
+        },
+
+        tick: function () {
+          if (!this.el.is("vr-mode")) return;
+          var rightHand = document.querySelector("#rightHand");
+          var leftHand = document.querySelector("#leftHand");
+          var target = this.raycastFromHand(rightHand);
+          var hand = target ? rightHand : null;
+          if (!target) {
+            target = this.raycastFromHand(leftHand);
+            hand = target ? leftHand : null;
+          }
+          this.setHoverTarget(target, hand);
+        },
+
+        raycastFromHand: function (hand) {
+          if (!hand) return null;
+          var meshes = this.collectInteractiveMeshes();
+          if (!meshes.length) return null;
+          if (hand.components && hand.components.raycaster) {
+            var handRay = hand.components.raycaster;
+            if (typeof handRay.refreshObjects === "function") handRay.refreshObjects();
+            if (handRay.intersectedEls && handRay.intersectedEls.length) {
+              for (var i = 0; i < handRay.intersectedEls.length; i += 1) {
+                var resolved = this.resolveTarget(handRay.intersectedEls[i]);
+                if (resolved) return resolved;
+              }
+            }
+            var handRc = handRay.raycaster;
+            if (handRc && handRc.ray) {
+              this.raycaster.ray.copy(handRc.ray);
+              this.raycaster.far = 14;
+              var handHits = this.raycaster.intersectObjects(meshes, false);
+              if (handHits.length) return this.findClickableElement(handHits[0].object);
+            }
+          }
+          hand.object3D.updateMatrixWorld(true);
+          var origin = new THREE.Vector3();
+          var direction = new THREE.Vector3(0, 0, -1);
+          hand.object3D.getWorldPosition(origin);
+          direction.applyQuaternion(hand.object3D.getWorldQuaternion(new THREE.Quaternion()));
+          this.raycaster.set(origin, direction.normalize());
+          this.raycaster.far = 14;
+          var hits = this.raycaster.intersectObjects(meshes, false);
+          if (!hits.length) return null;
+          return this.findClickableElement(hits[0].object);
+        },
+
+        collectInteractiveMeshes: function () {
+          var meshes = [];
+          var popup = document.querySelector("#vrMaterialPopup");
+          if (popup && popup.getAttribute("visible") !== "false" && popup.object3D.visible !== false) {
+            this.appendClickableMeshes(popup, meshes);
+            return meshes;
+          }
+          document.querySelectorAll(".material-item.clickable").forEach(function (el) {
+            if (el.getAttribute("visible") === "false") return;
+            el.object3D.updateMatrixWorld(true);
+            el.object3D.traverse(function (node) {
+              if (node.isMesh && node.geometry) meshes.push(node);
+            });
+          });
+          return meshes;
+        },
+
+        appendClickableMeshes: function (root, meshes) {
+          root.querySelectorAll(".clickable").forEach(function (el) {
+            if (el.getAttribute("visible") === "false") return;
+            var btn = el.components && el.components["material-vr-btn"];
+            if (btn && btn.hitMesh) {
+              btn.hitMesh.updateMatrixWorld(true);
+              meshes.push(btn.hitMesh);
+              return;
+            }
+            el.object3D.updateMatrixWorld(true);
+            el.object3D.traverse(function (node) {
+              if (node.isMesh && node.geometry) meshes.push(node);
+            });
+          });
+        },
+
+        resolveTarget: function (el) {
+          if (!el) return null;
+          if (el.components && el.components["material-vr-btn"]) return el;
+          if (el.components && el.components["material-choice"]) return el;
+          if (typeof findMaterialItem === "function") {
+            var materialItem = findMaterialItem(el);
+            if (materialItem && materialItem.classList.contains("clickable")) return materialItem;
+          }
+          if (el.classList && el.classList.contains("material-item") && el.classList.contains("clickable")) return el;
+          return null;
+        },
+
+        setHoverTarget: function (next, hand) {
+          if (next === this._hoverTarget && hand === this._hoverHand) return;
+          if (this._hoverTarget) {
+            this._hoverTarget.emit("mouseleave");
+            var prevMaterial = typeof findMaterialItem === "function" ? findMaterialItem(this._hoverTarget) : null;
+            if (prevMaterial) resetMaterialItemHighlight(prevMaterial);
+          }
+          this._hoverTarget = next;
+          this._hoverHand = hand;
+          if (this._hoverTarget) {
+            this._hoverTarget.emit("mouseenter");
+            var nextMaterial = typeof findMaterialItem === "function" ? findMaterialItem(this._hoverTarget) : null;
+            if (nextMaterial) highlightMaterialItem(nextMaterial);
+          }
+          this.updateHandHoverVisual(next, hand);
+        },
+
+        updateHandHoverVisual: function (target, activeHand) {
+          var rightHand = document.querySelector("#rightHand");
+          var leftHand = document.querySelector("#leftHand");
+          var hovering = !!target;
+          [rightHand, leftHand].forEach(function (handEl) {
+            if (!handEl) return;
+            var isActive = hovering && handEl === activeHand;
+            handEl.setAttribute("line", {
+              color: isActive ? "#ffe08a" : handEl.id === "rightHand" ? "#ffb13d" : "#2bd4ff",
+              opacity: isActive ? 1 : hovering ? 0.42 : handEl.id === "rightHand" ? 0.85 : 0.55,
+            });
+            var cursor = handEl.querySelector(".home-hand-cursor");
+            if (cursor) {
+              cursor.setAttribute("visible", isActive);
+              cursor.setAttribute("material", "color: #ffd37a; shader: flat; opacity: " + (isActive ? "1" : "0.55"));
+              cursor.setAttribute("scale", isActive ? "1.35 1.35 1.35" : "1 1 1");
+            }
+          });
+        },
+
+        onHandSelect: function (hand) {
+          if (!this.canSelect() || !hand) return;
+          var target = this.raycastFromHand(hand);
+          if (!target && this._hoverTarget) target = this._hoverTarget;
+          if (!target) return;
+          target.emit("click");
+        },
+
+        canSelect: function () {
+          if (!this.el.is("vr-mode") || !gameStarted) return false;
+          var now = performance.now();
+          if (now - this.lastAt < this.data.debounceMs) return false;
+          this.lastAt = now;
+          return true;
+        },
+
+        refreshRaycasters: function () {
+          ["#leftHand", "#rightHand"].forEach(function (selector) {
+            var el = document.querySelector(selector);
+            if (!el || !el.components || !el.components.raycaster) return;
+            if (typeof el.components.raycaster.refreshObjects === "function") {
+              el.components.raycaster.refreshObjects();
+            }
+          });
+        },
+
+        findClickableElement: function (object3D) {
+          var current = object3D;
+          while (current) {
+            if (current.userData && current.userData.clickableEl) return current.userData.clickableEl;
+            if (current.el && current.el.classList && current.el.classList.contains("clickable")) return current.el;
+            current = current.parent;
+          }
+          return null;
+        },
+
+        remove: function () {
+          this.el.removeEventListener("enter-vr", this.onEnterVr);
+          this.el.removeEventListener("exit-vr", this.onExitVr);
+        },
+      });
+
+      AFRAME.registerComponent("material-popup-dock", {
+        schema: {
+          side: { default: "right" },
+          offsetY: { default: 1.18 },
+        },
+
+        init: function () {
+          this.syncDock = this.syncDock.bind(this);
+          this.syncDock();
+        },
+
+        syncDock: function () {
+          var x = this.data.side === "left" ? -MATERIAL_POPUP_SIDE_X : MATERIAL_POPUP_SIDE_X;
+          this.el.object3D.position.set(x, this.data.offsetY, WORKBENCH_Z);
+        },
+      });
+
+      AFRAME.registerComponent("face-camera", {
+        schema: {
+          target: { type: "string", default: "#mainCamera" },
+        },
+
+        tick: function () {
+          var camera =
+            (this.data.target && document.querySelector(this.data.target)) ||
+            document.querySelector("#mainCamera");
+          if (!camera) return;
+
+          var worldPosition = new THREE.Vector3();
+          camera.object3D.getWorldPosition(worldPosition);
+          this.el.object3D.lookAt(worldPosition);
+        },
+      });
+
+      AFRAME.registerComponent("manual-interaction", {
+        init: function () {
+          this.raycaster = new THREE.Raycaster();
+          this.mouse = new THREE.Vector2();
+          this.lastSelect = 0;
+          this.handEvents = [
+            "triggerdown",
+            "gripdown",
+            "abuttondown",
+            "bbuttondown",
+            "xbuttondown",
+            "ybuttondown",
+            "selectstart",
+          ];
+          this.bindInput = this.bindInput.bind(this);
+          this.onEnterVr = this.onEnterVr.bind(this);
+
+          if (this.el.canvas) {
+            this.bindInput();
+          } else {
+            this.el.addEventListener("render-target-loaded", this.bindInput);
+          }
+        },
+
+        bindInput: function () {
+          var canvas = this.el.canvas;
+          var self = this;
+
+          canvas.addEventListener("click", this.selectFromMouse.bind(this));
+          canvas.addEventListener("pointerdown", this.selectFromMouse.bind(this));
+
+          document.addEventListener("keydown", function (event) {
+            if (event.code === "Space" || event.code === "Enter") {
+              self.selectFromCenter();
+            }
+          });
+
+          this.bindHandControls();
+          this.el.addEventListener("enter-vr", this.onEnterVr);
+          if (this.el.is("vr-mode")) this.onEnterVr();
+        },
+
+        onEnterVr: function () {
+          var self = this;
+          this.bindHandControls();
+          this.bindXrSelect();
+          requestAnimationFrame(function () {
+            self.refreshHandRaycasters();
+          });
+          window.setTimeout(function () {
+            self.bindHandControls();
+            self.bindXrSelect();
+            self.refreshHandRaycasters();
+          }, 180);
+        },
+
+        refreshHandRaycasters: function () {
+          [document.querySelector("#leftHand"), document.querySelector("#rightHand")].forEach(function (hand) {
+            if (!hand || !hand.components || !hand.components.raycaster) return;
+            var rc = hand.components.raycaster;
+            if (typeof rc.refreshObjects === "function") rc.refreshObjects();
+          });
+        },
+
+        bindHandControls: function () {
+          if (this.el.components && this.el.components["materials-vr-ui"]) return;
+          var self = this;
+          [document.querySelector("#leftHand"), document.querySelector("#rightHand")].forEach(function (hand) {
+            if (!hand || hand.__materialsHandBound) return;
+            hand.__materialsHandBound = true;
+            self.handEvents.forEach(function (eventName) {
+              hand.addEventListener(eventName, function () {
+                self.selectFromHand(hand, true);
+              });
+            });
+          });
+        },
+
+        bindXrSelect: function () {
+          if (this.el.components && this.el.components["materials-vr-ui"]) return;
+          var self = this;
+          var renderer = this.el.renderer;
+          var xr = renderer && renderer.xr;
+          var session = xr && xr.getSession ? xr.getSession() : null;
+          if (!session || session.__materialsSelectBound) return;
+
+          session.__materialsSelectBound = true;
+          session.addEventListener("select", function (event) {
+            if (!self.canSelect()) return;
+            var rightHand = document.querySelector("#rightHand");
+            var leftHand = document.querySelector("#leftHand");
+            var hand = null;
+            if (event && event.inputSource) {
+              if (event.inputSource.handedness === "left") hand = leftHand;
+              if (event.inputSource.handedness === "right") hand = rightHand;
+            }
+            if (!hand) hand = rightHand || leftHand;
+            if (hand && self.trySelectFromHandRaycaster(hand)) return;
+            if (rightHand) {
+              self.selectFromHand(rightHand, true);
+              return;
+            }
+            if (leftHand) {
+              self.selectFromHand(leftHand, true);
+              return;
+            }
+            self.selectFromCenter();
+          });
+        },
+
+        trySelectFromHandRaycaster: function (handEl) {
+          if (!handEl || !handEl.components || !handEl.components.raycaster) return false;
+          var handRay = handEl.components.raycaster;
+          if (typeof handRay.refreshObjects === "function") handRay.refreshObjects();
+          if (!handRay.intersectedEls || !handRay.intersectedEls.length) return false;
+          for (var i = 0; i < handRay.intersectedEls.length; i += 1) {
+            var target = this.resolveClickTarget(handRay.intersectedEls[i]);
+            if (target) {
+              this.invokeTarget(target);
+              return true;
+            }
+          }
+          return false;
+        },
+
+        resolveClickTarget: function (el) {
+          if (!el) return null;
+          if (el.components && el.components["material-choice"]) return el;
+          if (typeof findMaterialItem === "function") {
+            var materialItem = findMaterialItem(el);
+            if (materialItem) return materialItem;
+          }
+          if (el.classList && el.classList.contains("clickable")) return el;
+          if (el.object3D) {
+            var fromMesh = this.findClickableElement(el.object3D);
+            if (fromMesh) return fromMesh;
+          }
+          var parent = el.parentElement;
+          while (parent) {
+            if (parent.components && parent.components["material-choice"]) return parent;
+            if (parent.classList && parent.classList.contains("material-item")) return parent;
+            if (parent.classList && parent.classList.contains("clickable")) return parent;
+            parent = parent.parentElement;
+          }
+          return null;
+        },
+
+        getThreeCamera: function () {
+          var cameraEl = this.el.camera || document.querySelector("#mainCamera");
+          if (!cameraEl) return null;
+          if (cameraEl.components && cameraEl.components.camera && cameraEl.components.camera.camera) {
+            return cameraEl.components.camera.camera;
+          }
+          return cameraEl.getObject3D("camera") || cameraEl.object3D;
+        },
+
+        selectFromMouse: function (event) {
+          if (!this.canSelect()) return;
+          var threeCamera = this.getThreeCamera();
+          if (!threeCamera) return;
+          var rect = this.el.canvas.getBoundingClientRect();
+          this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+          this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+          this.raycaster.setFromCamera(this.mouse, threeCamera);
+          this.activateFirstHit();
+        },
+
+        selectFromCenter: function () {
+          if (!this.canSelect()) return;
+          var threeCamera = this.getThreeCamera();
+          if (!threeCamera) return;
+          this.raycaster.setFromCamera(new THREE.Vector2(0, 0), threeCamera);
+          this.activateFirstHit();
+        },
+
+        selectFromHand: function (handEl, forceRay) {
+          if (!this.canSelect()) return;
+          handEl = handEl || document.querySelector("#rightHand") || document.querySelector("#leftHand");
+          if (!handEl) return;
+
+          if (this.trySelectFromHandRaycaster(handEl)) return;
+
+          var target = this.findHandRayTarget(handEl);
+          if (target) {
+            this.invokeTarget(target);
+            return;
+          }
+
+          if (forceRay !== false && this.castHandRay(handEl)) {
+            this.activateFirstHit();
+            return;
+          }
+
+          if (!this.el.is("vr-mode")) {
+            this.selectFromCenter();
+          }
+        },
+
+        findHandRayTarget: function (handEl) {
+          if (!handEl || !handEl.components || !handEl.components.raycaster) return null;
+          var handRay = handEl.components.raycaster;
+          if (typeof handRay.refreshObjects === "function") handRay.refreshObjects();
+
+          if (handRay.intersectedEls && handRay.intersectedEls.length) {
+            for (var i = 0; i < handRay.intersectedEls.length; i += 1) {
+              var resolved = this.resolveClickTarget(handRay.intersectedEls[i]);
+              if (resolved) return resolved;
+            }
+          }
+
+          var handRc = handRay.raycaster;
+          if (handRc && handRc.ray) {
+            this.raycaster.ray.copy(handRc.ray);
+            this.raycaster.far = handRc.far || 12;
+            var hits = this.raycaster.intersectObjects(this.collectClickableRoots(), true);
+            if (hits.length) {
+              return this.findClickableElement(hits[0].object);
+            }
+          }
+
+          return null;
+        },
+
+        castHandRay: function (handEl) {
+          if (!handEl || !handEl.object3D) return false;
+          handEl.object3D.updateMatrixWorld(true);
+          var origin = new THREE.Vector3();
+          var direction = new THREE.Vector3(0, 0, -1);
+          handEl.object3D.getWorldPosition(origin);
+          direction.applyQuaternion(handEl.object3D.getWorldQuaternion(new THREE.Quaternion()));
+          this.raycaster.set(origin, direction.normalize());
+          this.raycaster.far = 12;
+          return true;
+        },
+
+        canSelect: function () {
+          if (!gameStarted) return false;
+          var now = performance.now();
+          if (now - this.lastSelect < 220) return false;
+          this.lastSelect = now;
+          return true;
+        },
+
+        collectClickableRoots: function () {
+          var roots = [];
+          var self = this;
+          Array.from(document.querySelectorAll(".clickable, .material-item, .material-hitbox")).forEach(function (el) {
+            if (!self.isWorldVisible(el)) return;
+            el.object3D.updateMatrixWorld(true);
+            roots.push(el.object3D);
+          });
+          return roots;
+        },
+
+        collectClickableMeshes: function () {
+          var meshes = [];
+          var self = this;
+          Array.from(document.querySelectorAll(".clickable, .material-item, .material-hitbox")).forEach(function (el) {
+            if (!self.isWorldVisible(el)) return;
+            el.object3D.updateMatrixWorld(true);
+            el.object3D.traverse(function (node) {
+              if (node.isMesh && node.geometry) meshes.push(node);
+            });
+          });
+          return meshes;
+        },
+
+        invokeTarget: function (target) {
+          if (!target) return;
+
+          if (target.components && target.components["material-choice"]) {
+            chooseMaterial(target);
+            return;
+          }
+          if (target.id === "furnaceHotspot") {
+            if (pageScene === "perform-prep") {
+              if (!materialSelectionComplete) {
+                setStatus("请先把 5 项正确材料加入炉中", "First add all 5 correct materials to the furnace");
+                return;
+              }
+              if (moltenIronReady) {
+                showExtractMoltenModal();
+                return;
+              }
+              setStatus("按住风箱 3 秒完成加热", "Hold the bellows for 3 seconds to finish heating");
+              return;
+            }
+            prepareMoltenIron();
+            return;
+          }
+          if (target.id === "bellowsHotspot") {
+            if (pageScene === "perform-prep") {
+              target.emit("click");
+              return;
+            }
+            pullBellows();
+            return;
+          }
+          if (target.id === "languageSwitch") {
+            toggleLanguage();
+            return;
+          }
+          if (target.id === "vrChoiceYes") {
+            confirmChoice();
+            return;
+          }
+          if (target.id === "vrChoiceNo") {
+            closeChoicePanel();
+            return;
+          }
+          if (target.dataset && target.dataset.laneIndex) {
+            hitRhythmLane(Number(target.dataset.laneIndex));
+            return;
+          }
+          target.emit("click");
+        },
+
+        activateFirstHit: function () {
+          var hits = this.raycaster.intersectObjects(this.collectClickableRoots(), true);
+          if (!hits.length) {
+            hits = this.raycaster.intersectObjects(this.collectClickableMeshes(), false);
+          }
+          if (!hits.length) return;
+          var target = this.findClickableElement(hits[0].object);
+          if (!target) return;
+          this.invokeTarget(target);
+        },
+
+        isWorldVisible: function (el) {
+          var current = el;
+          while (current) {
+            if (current.object3D && current.object3D.visible === false) return false;
+            current = current.parentElement;
+          }
+          return true;
+        },
+
+        findClickableElement: function (object3D) {
+          var current = object3D;
+          while (current) {
+            if (current.userData && current.userData.clickableEl) {
+              return current.userData.clickableEl;
+            }
+            if (current.el && current.el.classList && current.el.classList.contains("clickable")) {
+              return current.el;
+            }
+            if (current.el && current.el.classList && current.el.classList.contains("material-item")) {
+              return current.el;
+            }
+            current = current.parent;
+          }
+          return null;
+        },
+      });
+
+
+      AFRAME.registerComponent("furnace-step", {
+        init: function () {
+          this.el.addEventListener("click", prepareMoltenIron);
+          this.el.addEventListener("mouseenter", function () {
+            if (!materialSelectionComplete) {
+              setStatus("请先把 5 项正确材料加入炉中", "First add all 5 correct materials to the furnace");
+            } else if (heatingActive) {
+              setStatus("炉中正在加热点火，请等待进度条完成", "The furnace is heating. Wait for the progress bar to complete");
+            } else if (!moltenIronReady) {
+              setStatus("点击炉子：开始加热点火，等待约 5 秒", "Click the furnace: heat and ignite, then wait about 5 seconds");
+            } else {
+              setStatus("铁水已经流出，点击「取出铁水」完成准备", "Molten iron has flowed out. Click Extract Molten Iron to finish preparation");
+            }
+          });
+        },
+      });
+
+      AFRAME.registerComponent("material-model-fit", {
+        schema: {
+          targetSize: { default: 0.32 },
+          groundY: { default: 0 },
+        },
+        init: function () {
+          this.fitted = false;
+          this.onLoaded = this.onLoaded.bind(this);
+          this.el.addEventListener("model-loaded", this.onLoaded);
+        },
+        getLocalBounds: function (root) {
+          var box = new THREE.Box3();
+          var hasMesh = false;
+          root.updateMatrixWorld(true);
+          root.traverse(function (node) {
+            if (!node.isMesh || !node.geometry) return;
+            if (!node.geometry.boundingBox) node.geometry.computeBoundingBox();
+            var meshBox = node.geometry.boundingBox.clone();
+            meshBox.applyMatrix4(node.matrix);
+            if (!hasMesh) {
+              box.copy(meshBox);
+              hasMesh = true;
+            } else {
+              box.union(meshBox);
+            }
+          });
+          return hasMesh ? box : null;
+        },
+        onLoaded: function () {
+          if (this.fitted) return;
+          var self = this;
+          requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+              if (self.fitted) return;
+              var root = self.el.object3D;
+              var box = self.getLocalBounds(root);
+              if (!box || !isFinite(box.min.x) || !isFinite(box.max.x)) return;
+              var size = new THREE.Vector3();
+              box.getSize(size);
+              var maxDim = Math.max(size.x, size.y, size.z);
+              if (maxDim <= 1e-6) return;
+              var scale = self.data.targetSize / maxDim;
+              root.scale.set(scale, scale, scale);
+              root.position.set(0, 0, 0);
+              root.updateMatrixWorld(true);
+              box = self.getLocalBounds(root);
+              if (!box) return;
+              root.position.y = self.data.groundY - box.min.y;
+              self.fitted = true;
+            });
+          });
+        },
+        remove: function () {
+          this.el.removeEventListener("model-loaded", this.onLoaded);
+        },
+      });
+
+      AFRAME.registerComponent("material-choice", {
+        schema: {
+          key: { default: "" },
+          correct: { default: false },
+        },
+      });
+
+      AFRAME.registerComponent("bellows-step", {
+        init: function () {
+          this.onPull = this.onPull.bind(this);
+          this.onHoldStart = this.onHoldStart.bind(this);
+          this.onHoldEnd = this.onHoldEnd.bind(this);
+          this.el.addEventListener("click", this.onPull);
+          this.el.addEventListener("mousedown", this.onHoldStart);
+          this.el.addEventListener("mouseup", this.onHoldEnd);
+          this.el.addEventListener("mouseleave", this.onHoldEnd);
+          this.el.addEventListener("touchstart", this.onHoldStart);
+          this.el.addEventListener("touchend", this.onHoldEnd);
+          this.el.addEventListener("mouseenter", function () {
+            if (pageScene === "perform-prep") {
+              setStatus("按住风箱或连续点击，保持 3 秒完成准备", "Hold or repeatedly click the bellows for 3 seconds");
+              return;
+            }
+            if (!furnacePrepared) {
+              setStatus("先点击炉火完成发炉，再拉风箱", "Prepare the furnace first, then pull the bellows");
+            } else if (!moltenIronReady) {
+              setStatus("拉风箱升温，目标绿色温区 " + heatMin + "-" + heatMax + "℃", "Pull bellows; target green zone " + heatMin + "-" + heatMax + "℃");
+            }
+          });
+        },
+        onPull: function () {
+          if (pageScene === "perform-prep") {
+            if (performPrepComplete) return;
+            if (!heatingActive) startPerformPrepBellows();
+            bellowsHoldTime = Math.min(PERFORM_PREP_BELLOWS_SECONDS, bellowsHoldTime + 0.55);
+            animateBellows();
+            createFurnaceFireEmoji(document.querySelector("#furnace"), 2);
+            updatePerformPrepBellows(0);
+            return;
+          }
+          pullBellows();
+        },
+        onHoldStart: function (event) {
+          if (pageScene !== "perform-prep" || performPrepComplete) return;
+          if (event && event.type === "touchstart") event.preventDefault();
+          beginBellowsHold();
+        },
+        onHoldEnd: function () {
+          if (pageScene !== "perform-prep") return;
+          endBellowsHold();
+        },
+        remove: function () {
+          this.el.removeEventListener("click", this.onPull);
+          this.el.removeEventListener("mousedown", this.onHoldStart);
+          this.el.removeEventListener("mouseup", this.onHoldEnd);
+          this.el.removeEventListener("mouseleave", this.onHoldEnd);
+          this.el.removeEventListener("touchstart", this.onHoldStart);
+          this.el.removeEventListener("touchend", this.onHoldEnd);
+        },
+      });
+
+      AFRAME.registerComponent("language-switch", {
+        init: function () {
+          this.el.addEventListener("click", toggleLanguage);
+        },
+      });
+
+      AFRAME.registerComponent("pulse", {
+        tick: function (time) {
+          var scale = 1 + Math.sin(time / 260) * 0.06;
+          this.el.object3D.scale.set(scale, scale, scale);
+        },
+      });
+
+      AFRAME.registerComponent("heating-progress-loop", {
+        tick: function () {
+          updateHeatingProgress();
+          updateRhythmGame();
+        },
+      });
+
+      function isVrMode() {
+        var scene = document.querySelector("a-scene");
+        return !!(scene && scene.is && scene.is("vr-mode"));
+      }
+
+      function refreshChoicePanelLanguage() {
+        if (!pendingChoice) return;
+        var text = uiText[currentLanguage];
+        var titleEl = document.querySelector("#choiceTitle");
+        var bodyEl = document.querySelector("#choiceBody");
+        var yesBtn = document.querySelector("#choiceYes");
+        var noBtn = document.querySelector("#choiceNo");
+        var vrTitle = document.querySelector("#vrChoiceTitle");
+        var vrBody = document.querySelector("#vrChoiceBody");
+        var vrYes = document.querySelector("#vrChoiceYes");
+        var vrNo = document.querySelector("#vrChoiceNo");
+
+        if (pendingChoice.kind === "material") {
+          var info = materialInfo[pendingChoice.key];
+          if (info && info[currentLanguage]) {
+            var suffix = pendingChoice.alreadyAdded
+              ? (currentLanguage === "zh" ? "（已加入）" : " (Already added)")
+              : (currentLanguage === "zh" ? " 是否加入熔炉？" : " Add to furnace?");
+            var title = info[currentLanguage].name;
+            var body =
+              pageScene === "perform-prep"
+                ? (pendingChoice.alreadyAdded
+                  ? (currentLanguage === "zh" ? "已加入熔炉" : "Already in furnace")
+                  : suffix.trim())
+                : info[currentLanguage].desc + suffix;
+            if (titleEl) titleEl.textContent = title;
+            if (bodyEl) bodyEl.textContent = body;
+            if (vrTitle) {
+              vrTitle.setAttribute("canvas-label", {
+                text: title,
+                width: 1.92,
+                height: 0.34,
+                fontSize: 42,
+                background: "rgba(0,0,0,0)",
+                border: "rgba(0,0,0,0)",
+                color: "#ffe7a8",
+              });
+            }
+            if (vrBody) {
+              vrBody.setAttribute("visible", "true");
+              vrBody.setAttribute("material-popup-label", {
+                text: body,
+                width: 1.92,
+                height: pageScene === "perform-prep" ? 0.42 : 0.92,
+                fontSize: pageScene === "perform-prep" ? 34 : 30,
+                maxLines: pageScene === "perform-prep" ? 2 : 6,
+                color: "#ffd39b",
+              });
+            }
+          }
+          if (yesBtn) {
+            yesBtn.textContent = pendingChoice.alreadyAdded
+              ? (currentLanguage === "zh" ? "确定" : "OK")
+              : text.choiceYes;
+            yesBtn.style.display = "";
+          }
+          if (noBtn) {
+            noBtn.textContent = text.choiceNo;
+            noBtn.style.display = pendingChoice.alreadyAdded ? "none" : "";
+          }
+          if (vrYes) {
+            vrYes.setAttribute("material-vr-btn", {
+              action: "confirm",
+              label: pendingChoice.alreadyAdded
+                ? (currentLanguage === "zh" ? "确定" : "OK")
+                : text.choiceYes,
+              width: 0.82,
+              height: 0.2,
+            });
+          }
+          if (vrNo) {
+            vrNo.setAttribute("visible", pendingChoice.alreadyAdded ? "false" : "true");
+            vrNo.setAttribute("material-vr-btn", {
+              action: "cancel",
+              label: text.choiceNo,
+              width: 0.82,
+              height: 0.2,
+            });
+          }
+        } else if (pendingChoice.kind === "error") {
+          var errTitle = currentLanguage === "zh" ? "材料错误" : "Wrong Material";
+          var errBody = currentLanguage === "zh" ? "材料错误，无法添加" : "Wrong material — cannot be added.";
+          if (titleEl) titleEl.textContent = errTitle;
+          if (bodyEl) bodyEl.textContent = errBody;
+          if (yesBtn) {
+            yesBtn.textContent = currentLanguage === "zh" ? "确定" : "OK";
+            yesBtn.style.display = "";
+          }
+          if (noBtn) noBtn.style.display = "none";
+          if (vrTitle) {
+            vrTitle.setAttribute("canvas-label", {
+              text: errTitle,
+              width: 1.92,
+              height: 0.34,
+              fontSize: 42,
+              background: "rgba(0,0,0,0)",
+              border: "rgba(0,0,0,0)",
+              color: "#ffe7a8",
+            });
+          }
+          if (vrBody) {
+            vrBody.setAttribute("material-popup-label", {
+              text: errBody,
+              width: 1.92,
+              height: 0.92,
+              fontSize: 30,
+              maxLines: 6,
+              color: "#ffd39b",
+            });
+          }
+          if (vrYes) {
+            vrYes.setAttribute("material-vr-btn", {
+              action: "confirm",
+              label: currentLanguage === "zh" ? "确定" : "OK",
+              width: 0.82,
+              height: 0.2,
+            });
+          }
+          if (vrNo) vrNo.setAttribute("visible", "false");
+        }
+        refreshVrPopupRaycasters();
+      }
+
+      function refreshVrPopupRaycasters() {
+        var scene = document.querySelector("a-scene");
+        if (scene && scene.components && scene.components["materials-vr-ui"]) {
+          scene.components["materials-vr-ui"].refreshRaycasters();
+        }
+        if (scene && scene.components && scene.components["manual-interaction"]) {
+          scene.components["manual-interaction"].refreshHandRaycasters();
+        }
+      }
+
+      function showVrMaterialChoice() {
+        var popup = document.querySelector("#vrMaterialPopup");
+        if (!popup) return;
+        dockMaterialPopup();
+        popup.setAttribute("visible", "true");
+        refreshVrPopupRaycasters();
+      }
+
+      function dockMaterialPopup() {
+        var popup = document.querySelector("#vrMaterialPopup");
+        if (!popup) return;
+        if (popup.components && popup.components["material-popup-dock"]) {
+          popup.components["material-popup-dock"].syncDock();
+          return;
+        }
+        popup.object3D.position.set(MATERIAL_POPUP_SIDE_X, 1.18, WORKBENCH_Z);
+      }
+
+      function showMaterialChoice(el) {
+        var data = el.components["material-choice"].data;
+        pendingChoice = {
+          kind: "material",
+          el: el,
+          key: data.key,
+          correct: !!data.correct,
+          alreadyAdded: !!selectedMaterials[data.key],
+        };
+        refreshChoicePanelLanguage();
+        if (isVrMode()) {
+          showVrMaterialChoice();
+          var panel = document.querySelector("#choicePanel");
+          if (panel) panel.hidden = true;
+        } else {
+          var panelWeb = document.querySelector("#choicePanel");
+          if (panelWeb) panelWeb.hidden = false;
+          var vrPopup = document.querySelector("#vrMaterialPopup");
+          if (vrPopup) vrPopup.setAttribute("visible", "false");
+        }
+      }
+
+      function showErrorPopup(el) {
+        pendingChoice = { kind: "error", el: el || null };
+        refreshChoicePanelLanguage();
+        if (isVrMode()) {
+          showVrMaterialChoice();
+        } else {
+          var panel = document.querySelector("#choicePanel");
+          if (panel) panel.hidden = false;
+          var vrPopup = document.querySelector("#vrMaterialPopup");
+          if (vrPopup) vrPopup.setAttribute("visible", "false");
+        }
+      }
+
+      function closeChoicePanel() {
+        pendingChoice = null;
+        var panel = document.querySelector("#choicePanel");
+        if (panel) panel.hidden = true;
+        var vrPopup = document.querySelector("#vrMaterialPopup");
+        if (vrPopup) vrPopup.setAttribute("visible", "false");
+        var vrBody = document.querySelector("#vrChoiceBody");
+        if (vrBody) vrBody.setAttribute("visible", "true");
+        var yesBtn = document.querySelector("#choiceYes");
+        var noBtn = document.querySelector("#choiceNo");
+        if (yesBtn) yesBtn.style.display = "";
+        if (noBtn) noBtn.style.display = "";
+        var vrYes = document.querySelector("#vrChoiceYes");
+        var vrNo = document.querySelector("#vrChoiceNo");
+        if (vrYes) vrYes.setAttribute("visible", "true");
+        if (vrNo) vrNo.setAttribute("visible", "true");
+        var scene = document.querySelector("a-scene");
+        if (scene && scene.components && scene.components["materials-vr-ui"]) {
+          scene.components["materials-vr-ui"].setHoverTarget(null, null);
+          scene.components["materials-vr-ui"].refreshRaycasters();
+        }
+      }
+
+      function confirmChoice() {
+        if (!pendingChoice) {
+          closeChoicePanel();
+          return;
+        }
+        if (pendingChoice.kind === "error") {
+          closeChoicePanel();
+          return;
+        }
+        if (pendingChoice.kind === "material") {
+          var el = pendingChoice.el;
+          var key = pendingChoice.key;
+          var correct = pendingChoice.correct;
+          var wasAlreadyAdded = pendingChoice.alreadyAdded;
+          closeChoicePanel();
+          if (wasAlreadyAdded) return;
+          processMaterialChoice(el, key, correct);
+        }
+      }
+
+      function processMaterialChoice(el, key, correct) {
+        if (materialSelectionComplete) {
+          setStatus(
+            "材料已加入炉中：请点击熔炉开始加热点火",
+            "Materials are in the furnace: click the furnace to start heating and ignition"
+          );
+          return;
+        }
+        if (!correct) {
+          el.setAttribute("animation__shake", "property: rotation; to: 0 18 0; dur: 80; dir: alternate; loop: 4");
+          pendingChoice = { kind: "error", el: el };
+          refreshChoicePanelLanguage();
+          if (isVrMode()) {
+            showVrMaterialChoice();
+          } else {
+            var panel = document.querySelector("#choicePanel");
+            if (panel) panel.hidden = false;
+          }
+          return;
+        }
+        if (selectedMaterials[key]) return;
+
+        selectedMaterials[key] = true;
+        el.setAttribute("scale", "1.18 1.18 1.18");
+        var ring = el.querySelector(".select-ring");
+        if (ring) {
+          ring.setAttribute("color", "#18d0c4");
+          ring.setAttribute("material", "shader: flat; side: double; transparent: true; opacity: 0.95; emissive: #18d0c4; emissiveIntensity: 1.2");
+        }
+        flyMaterialToFurnace(el, key);
+        updateMaterialProgress();
+
+        var count = Object.keys(selectedMaterials).length;
+        if (count < REQUIRED_MATERIAL_COUNT) {
+          setStatus("已加入炉中：" + count + "/" + REQUIRED_MATERIAL_COUNT, "Added to furnace: " + count + "/" + REQUIRED_MATERIAL_COUNT);
+          return;
+        }
+
+        materialSelectionComplete = true;
+        if (pageScene === "perform-prep") {
+          addPrepZoneGlow();
+          focusOnFurnaceView();
+          setStatus(
+            "材料已全部加入：按住风箱 3 秒完成加热",
+            "All materials added: hold the bellows for 3 seconds to finish heating"
+          );
+          return;
+        }
+        applyMaterialVrView();
+        addPrepZoneGlow();
+        setStatus(
+          "发炉清单完成！点击远处熔炉开始加热点火",
+          "Furnace list complete! Click the distant furnace to start heating and ignition"
+        );
+        if (storyMode && window.IronFlowerStory && window.IronFlowerStory.goToMaterialHeatingBridge) {
+          setTimeout(function () {
+            window.IronFlowerStory.goToMaterialHeatingBridge();
+          }, 650);
+        }
+      }
+
+      function chooseMaterial(el) {
+        if (!el || !el.components || !el.components["material-choice"]) return;
+        var now = performance.now();
+        if (chooseMaterial._lastEl === el && now - (chooseMaterial._lastAt || 0) < 320) return;
+        chooseMaterial._lastEl = el;
+        chooseMaterial._lastAt = now;
+        showMaterialChoice(el);
+      }
+
+      function tagMaterialClickable(item) {
+        if (!item || !item.object3D) return;
+        item.object3D.updateMatrixWorld(true);
+        item.object3D.traverse(function (node) {
+          if (node.isMesh) node.userData.clickableEl = item;
+        });
+      }
+
+      function stripMaterialCloneInteraction(material) {
+        var nodes = [material].concat(Array.prototype.slice.call(material.querySelectorAll("[id], .clickable, [material-choice], .select-ring, .material-hitbox")));
+        nodes.forEach(function (node) {
+          node.removeAttribute("id");
+          node.removeAttribute("material-choice");
+          node.classList.remove("clickable");
+          node.classList.remove("material-item");
+          node.classList.remove("select-ring");
+          node.classList.remove("material-hitbox");
+        });
+      }
+
+      function flyMaterialToFurnace(el, key) {
+        var root = document.querySelector("#fireworks");
+        var from = new THREE.Vector3();
+        el.object3D.getWorldPosition(from);
+
+        var material = el.cloneNode(true);
+        material.setAttribute("position", from.x + " " + from.y + " " + from.z);
+        material.setAttribute("scale", "1 1 1");
+        stripMaterialCloneInteraction(material);
+        root.appendChild(material);
+
+        var inside = new THREE.Vector3(0, 0.55, FURNACE_Z);
+        var mouth = new THREE.Vector3(0, 1.18, FURNACE_Z);
+        var peakY = Math.max(from.y, mouth.y) + 0.36;
+        var approachEnd = 0.7;
+        var flightDuration = 760;
+        var vanishDuration = 240;
+        var startTime = performance.now();
+
+        function mix(a, b, ratio) {
+          return a + (b - a) * ratio;
+        }
+
+        function render(now) {
+          var elapsed = now - startTime;
+          var position = material.object3D.position;
+          var scale = material.object3D.scale;
+          if (elapsed <= flightDuration) {
+            var progress = elapsed / flightDuration;
+            if (progress < approachEnd) {
+              var t = progress / approachEnd;
+              position.x = mix(from.x, mouth.x, t);
+              position.y = mix(from.y, mouth.y, t) + Math.sin(t * Math.PI) * (peakY - Math.max(from.y, mouth.y));
+              position.z = mix(from.z, mouth.z, t);
+            } else {
+              var t2 = (progress - approachEnd) / (1 - approachEnd);
+              position.x = mix(mouth.x, inside.x, t2);
+              position.y = mix(mouth.y, inside.y, t2);
+              position.z = mix(mouth.z, inside.z, t2);
+              scale.setScalar(mix(1, 0.35, t2));
+            }
+            requestAnimationFrame(render);
+            return;
+          }
+          if (elapsed <= flightDuration + vanishDuration) {
+            var fade = (elapsed - flightDuration) / vanishDuration;
+            scale.setScalar(Math.max(0.01, 0.35 * (1 - fade)));
+            requestAnimationFrame(render);
+            return;
+          }
+          material.remove();
+        }
+
+        requestAnimationFrame(render);
+      }
+
+      function addPrepZoneGlow() {
+        var ring = document.querySelector("#furnaceRing");
+        if (ring) {
+          ring.setAttribute("color", "#18d0c4");
+          ring.setAttribute("material", "transparent: true; opacity: 0.85; emissive: #18d0c4; emissiveIntensity: 1.4; shader: flat; side: double");
+          ring.setAttribute("animation__pulse", "property: scale; to: 1.18 1 1.18; dur: 720; dir: alternate; loop: true; easing: easeInOutSine");
+        }
+      }
+
+      function highlightMaterialItem(el) {
+        if (!el || selectedMaterials[el.components["material-choice"].data.key]) return;
+        var ring = el.querySelector(".select-ring");
+        if (ring) {
+          ring.setAttribute("color", "#ffe566");
+          ring.setAttribute("radius-outer", "0.24");
+          ring.setAttribute("material", "shader: flat; side: double; transparent: true; opacity: 1; emissive: #ffe566; emissiveIntensity: 1.15");
+        }
+        el.setAttribute("scale", "1.06 1.06 1.06");
+      }
+
+      function resetMaterialItemHighlight(el) {
+        if (!el) return;
+        var key = el.components && el.components["material-choice"] ? el.components["material-choice"].data.key : "";
+        if (selectedMaterials[key]) return;
+        var ring = el.querySelector(".select-ring");
+        if (ring) {
+          ring.setAttribute("color", "#ffbd42");
+          ring.setAttribute("radius-outer", "0.21");
+          ring.setAttribute("material", "shader: flat; side: double; transparent: true; opacity: 0.92; emissive: #ffbd42; emissiveIntensity: 0.65");
+        }
+        el.setAttribute("scale", "1 1 1");
+      }
+
+      function findMaterialItem(fromEl) {
+        var current = fromEl;
+        while (current) {
+          if (current.classList && current.classList.contains("material-item")) return current;
+          current = current.parentElement;
+        }
+        return null;
+      }
+
+      function wireMaterialItemInteraction(item) {
+        if (item.__interactionWired) return;
+        item.__interactionWired = true;
+
+        function onClick(evt) {
+          if (evt) evt.stopPropagation();
+          var targetItem = findMaterialItem(evt ? evt.target : item) || item;
+          chooseMaterial(targetItem);
+        }
+
+        function onEnter(evt) {
+          var targetItem = findMaterialItem(evt ? evt.target : item) || item;
+          highlightMaterialItem(targetItem);
+          if (pageScene === "perform-prep") {
+            setStatus(
+              "点击材料查看名称并选择加入。正确材料：稻草卷、铁炭、生铁片、黄铜、食盐",
+              "Click a material for its name and add it. Correct: straw rolls, charcoal, pig iron, brass, salt"
+            );
+            return;
+          }
+          setStatus(
+            "点击材料查看功能并选择是否加入。正确材料：稻草卷、铁炭、生铁片、黄铜、食盐",
+            "Click a material to see its function and choose to add it. Correct: straw rolls, charcoal, pig iron, brass, salt"
+          );
+        }
+
+        function onLeave(evt) {
+          var targetItem = findMaterialItem(evt ? evt.target : item) || item;
+          resetMaterialItemHighlight(targetItem);
+        }
+
+        var nodes = [item].concat(Array.prototype.slice.call(item.querySelectorAll("a-entity, a-box, a-sphere, a-cylinder, a-cone, a-torus, a-ring")));
+        nodes.forEach(function (node) {
+          if (!node) return;
+          if (node.classList && node.classList.contains("select-ring")) return;
+          node.addEventListener("click", onClick);
+          node.addEventListener("mouseenter", onEnter);
+          node.addEventListener("mouseleave", onLeave);
+        });
+      }
+
+      function initMaterialSelectRings() {
+        document.querySelectorAll(".material-item").forEach(function (item) {
+          if (!item.querySelector(".select-ring")) {
+            var ring = document.createElement("a-ring");
+            ring.className = "select-ring";
+            ring.setAttribute("position", "0 0.012 0");
+            ring.setAttribute("rotation", "-90 0 0");
+            ring.setAttribute("radius-inner", "0.16");
+            ring.setAttribute("radius-outer", "0.21");
+            ring.setAttribute("color", "#ffbd42");
+            ring.setAttribute("material", "shader: flat; side: double; transparent: true; opacity: 0.92; emissive: #ffbd42; emissiveIntensity: 0.65");
+            ring.setAttribute("animation__pulse", "property: scale; to: 1.14 1 1.14; dir: alternate; loop: true; dur: 900; easing: easeInOutSine");
+            item.appendChild(ring);
+          }
+          if (!item.querySelector(".material-hitbox")) {
+            var hit = document.createElement("a-cylinder");
+            hit.className = "material-hitbox clickable";
+            hit.setAttribute("position", "0 " + MATERIAL_HITBOX.y + " 0");
+            hit.setAttribute("radius", String(MATERIAL_HITBOX.radius));
+            hit.setAttribute("height", String(MATERIAL_HITBOX.height));
+            hit.setAttribute("material", "shader: flat; transparent: true; opacity: 0.01; side: double; depthWrite: false");
+            item.appendChild(hit);
+          } else {
+            var existingHit = item.querySelector(".material-hitbox");
+            existingHit.classList.add("clickable");
+            existingHit.setAttribute("position", "0 " + MATERIAL_HITBOX.y + " 0");
+            existingHit.setAttribute("radius", String(MATERIAL_HITBOX.radius));
+            existingHit.setAttribute("height", String(MATERIAL_HITBOX.height));
+          }
+          tagMaterialClickable(item);
+          wireMaterialItemInteraction(item);
+        });
+
+        var scene = document.querySelector("a-scene");
+        if (scene && scene.components && scene.components["manual-interaction"]) {
+          scene.components["manual-interaction"].refreshHandRaycasters();
+        }
+      }
+
+      function randomizeMaterialPositions() {
+        var items = Array.prototype.slice.call(document.querySelectorAll(".material-item"));
+        if (items.length === 0) return;
+        var slots = [
+          { x: -1.4, z: -0.35 }, { x: -0.7, z: -0.35 }, { x: 0.0, z: -0.35 }, { x: 0.7, z: -0.35 }, { x: 1.4, z: -0.35 },
+          { x: -1.4, z: 0.32 }, { x: -0.7, z: 0.32 }, { x: 0.0, z: 0.32 }, { x: 0.7, z: 0.32 }, { x: 1.4, z: 0.32 },
+        ];
+        for (var i = slots.length - 1; i > 0; i -= 1) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var tmp = slots[i]; slots[i] = slots[j]; slots[j] = tmp;
+        }
+        items.forEach(function (el, idx) {
+          if (idx >= slots.length) return;
+          var pos = el.getAttribute("position");
+          var y = (pos && typeof pos.y === "number" && !isNaN(pos.y)) ? pos.y : MATERIAL_TABLE_TOP_Y;
+          var slot = slots[idx];
+          el.setAttribute("position", slot.x + " " + y + " " + slot.z);
+          tagMaterialClickable(el);
+        });
+        var scene = document.querySelector("a-scene");
+        if (scene && scene.components && scene.components["manual-interaction"]) {
+          scene.components["manual-interaction"].refreshHandRaycasters();
+        }
+      }
+
+      function updateMaterialProgress() {
+        var count = Object.keys(selectedMaterials).length;
+        for (var i = 1; i <= REQUIRED_MATERIAL_COUNT; i += 1) {
+          var dot = document.querySelector("#matDot" + i);
+          if (!dot) continue;
+          var active = i <= count;
+          dot.setAttribute("color", active ? "#18d0c4" : "#163a34");
+          dot.setAttribute("material", active ? "emissive: #18d0c4; emissiveIntensity: 1.5" : "");
+        }
+      }
+
+      function prepareMoltenIron() {
+        var furnace = document.querySelector("#furnace");
+
+        if (!materialSelectionComplete) {
+          setStatus("请先把 5 项正确材料加入炉中：稻草卷、铁炭、生铁片、黄铜、食盐", "First add all 5 correct materials: straw rolls, charcoal, pig iron, brass, salt");
+          return;
+        }
+
+        if (heatingActive) {
+          setStatus("炉中正在加热：保持 1600-1800℃ 绿色温区 5 秒", "The furnace is heating: hold 1600-1800℃ green zone for 5 seconds");
+          return;
+        }
+
+        if (moltenIronReady) {
+          setStatus("铁水已经流出：点击「取出铁水」完成材料准备", "Molten iron has flowed out. Click Extract Molten Iron to finish preparation");
+          return;
+        }
+
+        furnacePrepared = true;
+        startHeatingFurnace(furnace);
+      }
+
+      function startHeatingFurnace(furnace) {
+        heatingActive = true;
+        furnacePrepared = true;
+        heatTemperature = heatStart;
+        heatHoldTime = 0;
+        heatLastTick = performance.now();
+        lastHeatingEmber = 0;
+        var fill = document.querySelector("#heatingFill");
+        var stream = document.querySelector("#moltenStream");
+        var readout = document.querySelector("#temperatureReadout");
+        var holdReadout = document.querySelector("#heatHoldReadout");
+        var state = getHeatState(heatTemperature);
+
+        if (fill) {
+          fill.object3D.scale.x = 0.01;
+          fill.setAttribute("position", "-0.78 0 0.025");
+          fill.setAttribute("color", "#ff9b26");
+        }
+        if (readout) readout.setAttribute("value", formatTempCelsius(heatTemperature) + "｜" + state.zh);
+        if (holdReadout) holdReadout.setAttribute("value", getGreenZoneHoldText(0));
+        updateHeatZoneLabels();
+
+        if (stream) stream.setAttribute("visible", "false");
+        var materialSelection = document.querySelector("#materialSelection");
+        if (materialSelection) materialSelection.setAttribute("visible", "false");
+        ["labelMaterials", "materialProgress"].forEach(function (id) {
+          var node = document.querySelector("#" + id);
+          if (node) node.setAttribute("visible", "false");
+        });
+        ["bellows", "bellowsHotspot", "labelBellows"].forEach(function (id) {
+          var node = document.querySelector("#" + id);
+          if (node) node.setAttribute("visible", "true");
+        });
+        var needle = document.querySelector("#heatNeedle");
+        if (needle) needle.setAttribute("position", heatToBarX(heatTemperature) + " 0 0.026");
+        addFurnaceGlow(furnace, 2.4, "#ff8a1c");
+        createFurnaceFireEmoji(furnace, 2);
+        setStatus(
+          "控温融铁：绿色温区为 " + heatMin + "-" + heatMax + "℃，点击风箱补温",
+          "Temperature control: green zone is " + heatMin + "-" + heatMax + "℃. Pull bellows to add heat"
+        );
+      }
+
+      function updateHeatingProgress() {
+        if (pageScene === "perform-prep") {
+          var now = performance.now();
+          var dt = Math.min((now - heatLastTick) / 1000, 0.08);
+          heatLastTick = now;
+          updatePerformPrepBellows(dt);
+          return;
+        }
+        if (!heatingActive) return;
+
+        var now = performance.now();
+        var dt = Math.min((now - heatLastTick) / 1000, 0.08);
+        heatLastTick = now;
+        heatTemperature = Math.max(heatScaleMin, heatTemperature - heatCoolPerSec * dt);
+        if (heatTemperature >= heatMin && heatTemperature <= heatMax) {
+          heatHoldTime += dt;
+        } else if (heatTemperature > heatMax + 50 || heatTemperature < heatMin - 100) {
+          heatHoldTime = Math.max(0, heatHoldTime - 1.5 * dt);
+        }
+
+        var progress = heatToProgress(heatTemperature);
+        var fill = document.querySelector("#heatingFill");
+        var readout = document.querySelector("#temperatureReadout");
+        var holdReadout = document.querySelector("#heatHoldReadout");
+        var needle = document.querySelector("#heatNeedle");
+        var state = getHeatState(heatTemperature);
+        var heatColor = heatTemperature > heatMax ? "#ff3b1f" : heatTemperature >= heatMin && heatTemperature <= heatMax ? "#20d482" : "#ff9b26";
+        if (fill) {
+          fill.object3D.scale.x = Math.max(0.01, progress);
+          fill.setAttribute("position", (-0.78 + progress * 0.76) + " 0 0.025");
+          fill.setAttribute("color", heatColor);
+        }
+        if (needle) {
+          needle.setAttribute("position", heatToBarX(heatTemperature) + " 0 0.026");
+        }
+        if (readout) {
+          readout.setAttribute("value", formatTempCelsius(heatTemperature) + "｜" + (currentLanguage === "en" ? state.en : state.zh));
+          readout.setAttribute("color", heatColor);
+        }
+        if (holdReadout) {
+          holdReadout.setAttribute("value", getGreenZoneHoldText(heatHoldTime));
+          holdReadout.setAttribute("color", heatTemperature >= heatMin && heatTemperature <= heatMax ? "#20d482" : "#ffd37a");
+        }
+
+        if (performance.now() - lastHeatingEmber > 260) {
+          lastHeatingEmber = performance.now();
+          addFurnaceGlow(document.querySelector("#furnace"), 2.4 + progress * 3.4, "#ff9b26");
+          if (Math.random() < 0.08) createFurnaceFireEmoji(document.querySelector("#furnace"), 1);
+          setStatus(
+            formatTempCelsius(heatTemperature) + "｜" + state.zh + "｜稳定 " + heatHoldTime.toFixed(1) + "/5 秒",
+            formatTempCelsius(heatTemperature) + " | " + state.en + " | Stable " + heatHoldTime.toFixed(1) + "/5 sec"
+          );
+        }
+
+        if (heatHoldTime >= 5) completeHeating();
+      }
+
+      function completeHeating() {
+        if (!heatingActive) return;
+        heatingActive = false;
+        moltenIronReady = true;
+        var furnace = document.querySelector("#furnace");
+        var stream = document.querySelector("#moltenStream");
+
+        if (stream) stream.setAttribute("visible", "true");
+        addFurnaceGlow(furnace, 5.8, "#ffb13d");
+        createFurnaceFireEmoji(furnace, 4);
+        ["bellows", "bellowsHotspot", "labelBellows"].forEach(function (id) {
+          var node = document.querySelector("#" + id);
+          if (node) node.setAttribute("visible", "false");
+        });
+        showExtractMoltenModal();
+      }
+
+      function pullBellows() {
+        if (pageScene === "perform-prep") {
+          if (performPrepComplete) return;
+          if (!heatingActive) startPerformPrepBellows();
+          bellowsHoldTime = Math.min(PERFORM_PREP_BELLOWS_SECONDS, bellowsHoldTime + 0.55);
+          animateBellows();
+          createFurnaceFireEmoji(document.querySelector("#furnace"), 2);
+          updatePerformPrepBellows(0);
+          return;
+        }
+        if (!materialSelectionComplete) {
+          setStatus("先把正确材料全部加入炉中，再拉风箱", "Add all correct materials into the furnace before pulling the bellows");
+          return;
+        }
+
+        if (!heatingActive && !moltenIronReady) {
+          startHeatingFurnace(document.querySelector("#furnace"));
+        }
+
+        if (moltenIronReady) {
+          setStatus("铁水已就绪：点击「取出铁水」完成材料准备", "Molten iron is ready: click Extract Molten Iron to finish preparation");
+          showExtractMoltenModal();
+          return;
+        }
+
+        var boost = heatTemperature < 1400 ? 90 : heatTemperature < heatMin ? 70 : heatTemperature < heatMax ? 45 : 25;
+        heatTemperature = Math.min(heatScaleMax, heatTemperature + boost);
+        animateBellows();
+        createFurnaceFireEmoji(document.querySelector("#furnace"), heatTemperature > heatMax ? 1 : 3);
+        var state = getHeatState(heatTemperature);
+        setStatus(
+          "拉风箱升温：当前 " + formatTempCelsius(heatTemperature) + "｜" + state.zh,
+          "Bellows heat up: now " + formatTempCelsius(heatTemperature) + " | " + state.en
+        );
+      }
+
+      function startPracticeLevel(level) {
+        rhythmMode = "practice";
+        rhythmLevel = level;
+        rhythmScore = level === 1 ? 0 : rhythmScore;
+        rhythmMisses = 0;
+        rhythmEnded = false;
+        rhythmActive = true;
+        rhythmStart = performance.now();
+        rhythmLastSpawn = 0;
+        resetRhythmEntities();
+        buildRhythmLanes(rhythmConfigs[level - 1].lanes);
+        setStatus("Practice 第 " + level + " 关：30 秒内击中下落铁花，最多失败 3 次", "Practice Level " + level + ": hit falling sparks for 30 sec. You have 3 misses");
+      }
+
+      function startPerformanceShow() {
+        rhythmMode = "performance";
+        rhythmLevel = 1;
+        rhythmScore = 0;
+        rhythmMisses = 0;
+        rhythmEnded = false;
+        rhythmActive = true;
+        rhythmStart = performance.now();
+        rhythmLastSpawn = 0;
+        resetRhythmEntities();
+        buildRhythmLanes(5);
+        setSceneStep(3);
+        updateAudienceReaction();
+        setStatus("正式表演：60 秒无限生命，击中得分，漏掉扣分", "Performance: 60 seconds, unlimited life. Hits score, misses subtract");
+      }
+
+      function resetRhythmEntities() {
+        rhythmNotes = [];
+        var lanes = document.querySelector("#rhythmLanes");
+        var notes = document.querySelector("#rhythmNotes");
+        if (lanes) lanes.innerHTML = "";
+        if (notes) notes.innerHTML = "";
+      }
+
+      function buildRhythmLanes(count) {
+        var lanes = document.querySelector("#rhythmLanes");
+        var title = document.querySelector("#rhythmTitle");
+        if (!lanes) return;
+
+        var spacing = 0.62;
+        var total = (count - 1) * spacing;
+        for (var i = 0; i < count; i += 1) {
+          var x = -total / 2 + i * spacing;
+          var lane = document.createElement("a-entity");
+          lane.setAttribute("position", x + " 1.85 0");
+          lane.innerHTML =
+            '<a-cylinder radius="0.018" height="2.5" rotation="0 0 0" color="#ffd37a" material="transparent: true; opacity: 0.34"></a-cylinder>' +
+            '<a-ring class="clickable rhythm-hit" data-lane-index="' + i + '" position="0 -1.05 0.03" radius-inner="0.16" radius-outer="0.23" color="#ffbd42" material="transparent: true; opacity: 0.9; emissive: #ff8a00; emissiveIntensity: 0.65"></a-ring>' +
+            '<a-text value="' + (i + 1) + '" align="center" width="1.5" position="0 -1.42 0.04" color="#fff4d2"></a-text>';
+          lanes.appendChild(lane);
+        }
+
+        if (title) {
+          var label = rhythmMode === "practice" ? "Practice Mode 第 " + rhythmLevel + " 关" : "Performance Mode 正式表演";
+          var body = rhythmMode === "practice" ? "Hit notes in the judgment rings. Three misses fail the level" : "60 seconds, unlimited life. Audience reacts to your score";
+          title.setAttribute("canvas-label", "text: " + label + "|" + body + "; width: 4.8; height: 0.72");
+        }
+      }
+
+      function updateRhythmGame() {
+        if (!rhythmActive) return;
+        var now = performance.now();
+        var config = rhythmMode === "practice" ? rhythmConfigs[rhythmLevel - 1] : { lanes: 5, speed: 1.65, spawn: 610, duration: 60000 };
+        var elapsed = now - rhythmStart;
+        var hud = document.querySelector("#rhythmHud");
+
+        if (now - rhythmLastSpawn > config.spawn) {
+          rhythmLastSpawn = now;
+          spawnRhythmNote(config);
+        }
+
+        rhythmNotes.slice().forEach(function (note) {
+          note.y -= config.speed / 60;
+          note.el.setAttribute("position", note.x + " " + note.y + " 0.08");
+          if (note.y < 0.48) {
+            note.el.remove();
+            rhythmNotes.splice(rhythmNotes.indexOf(note), 1);
+            registerRhythmMiss();
+          }
+        });
+
+        if (hud) {
+          var remaining = Math.max(0, Math.ceil((config.duration - elapsed) / 1000));
+          if (rhythmMode === "practice") {
+            hud.setAttribute("value", "Practice " + rhythmLevel + "/3   Time " + remaining + "   Miss " + rhythmMisses + "/3   Score " + rhythmScore);
+          } else {
+            hud.setAttribute("value", "Performance   Time " + remaining + "   Score " + rhythmScore + "   Miss " + rhythmMisses);
+          }
+        }
+
+        if (rhythmMode === "practice" && rhythmMisses >= 3) {
+          restartPracticeLevel();
+          return;
+        }
+
+        if (elapsed >= config.duration && !rhythmEnded) {
+          rhythmEnded = true;
+          if (rhythmMode === "practice") {
+            if (rhythmLevel < 3) {
+              setStatus("Practice 第 " + rhythmLevel + " 关通过：进入下一关", "Practice Level " + rhythmLevel + " passed: next level");
+              setTimeout(function () { startPracticeLevel(rhythmLevel + 1); }, 1200);
+            } else {
+              rhythmActive = false;
+              setStatus("四关通过：获得打铁花表演资质，进入正式表演", "All four levels passed: performance qualification earned");
+              setTimeout(function () { goToScene("scene-performance.html"); }, 1500);
+            }
+          } else {
+            rhythmActive = false;
+            updateAudienceReaction();
+            setStatus("表演结束：最终得分 " + rhythmScore, "Performance complete: final score " + rhythmScore);
+          }
+        }
+      }
+
+      function spawnRhythmNote(config) {
+        var lanes = config.lanes;
+        var lane = Math.floor(Math.random() * lanes);
+        var spacing = 0.62;
+        var total = (lanes - 1) * spacing;
+        var x = -total / 2 + lane * spacing;
+        var note = document.createElement("a-entity");
+        note.setAttribute("geometry", "primitive: sphere; radius: 0.075");
+        note.setAttribute("position", x + " 3.1 0.08");
+        note.setAttribute("material", "color: #fff4c1; emissive: #ff6a00; emissiveIntensity: 2.8; transparent: true; opacity: 1");
+        document.querySelector("#rhythmNotes").appendChild(note);
+        rhythmNotes.push({ el: note, lane: lane, x: x, y: 3.1 });
+      }
+
+      function hitRhythmLane(laneIndex) {
+        if (!rhythmActive) return;
+        var targetY = 0.8;
+        var best = null;
+        rhythmNotes.forEach(function (note) {
+          if (note.lane !== laneIndex) return;
+          var distance = Math.abs(note.y - targetY);
+          if (distance <= 0.34 && (!best || distance < best.distance)) {
+            best = { note: note, distance: distance };
+          }
+        });
+
+        if (!best) {
+          registerRhythmMiss();
+          return;
+        }
+
+        var note = best.note;
+        rhythmNotes.splice(rhythmNotes.indexOf(note), 1);
+        note.el.remove();
+        rhythmScore += best.distance < 0.16 ? 120 : 80;
+        createFlash(document.querySelector("#fireworks"), sceneStepX[currentSceneStep], 1.15, -3.4, 4, 5, 280);
+        if (rhythmMode === "performance") updateAudienceReaction();
+      }
+
+      function registerRhythmMiss() {
+        if (!rhythmActive) return;
+        rhythmMisses += 1;
+        rhythmScore = Math.max(0, rhythmScore - (rhythmMode === "performance" ? 45 : 25));
+        if (rhythmMode === "performance") updateAudienceReaction();
+      }
+
+      function restartPracticeLevel() {
+        rhythmActive = false;
+        setStatus("Practice 第 " + rhythmLevel + " 关失败：3 次失误已用完，重新开始本关", "Practice Level " + rhythmLevel + " failed: three misses used. Restarting");
+        setTimeout(function () {
+          startPracticeLevel(rhythmLevel);
+        }, 1400);
+      }
+
+      function updateAudienceReaction() {
+        var reaction = document.querySelector("#audienceReaction");
+        if (!reaction) return;
+        var text = "观众屏息等待";
+        if (rhythmScore >= 2600) text = "满堂喝彩！铁花如瀑";
+        else if (rhythmScore >= 1600) text = "掌声热烈，观众惊叹";
+        else if (rhythmScore >= 800) text = "观众点头，节奏稳定";
+        else if (rhythmMisses > 4) text = "观众有些紧张，注意节奏";
+        reaction.setAttribute("value", text + " / Score " + rhythmScore);
+      }
+
+      function animateBellows() {
+        var body = document.querySelector("#bellowsBody");
+        var handle = document.querySelector("#bellowsHandle");
+        if (!body || !handle) return;
+
+        body.removeAttribute("animation__compress");
+        body.removeAttribute("animation__release");
+        handle.removeAttribute("animation__pull");
+        handle.removeAttribute("animation__return");
+
+        body.setAttribute("animation__compress", "property: scale; to: 1 0.62 0.86; dur: 160; easing: easeOutQuad");
+        handle.setAttribute("animation__pull", "property: position; to: -0.74 0.32 0; dur: 160; easing: easeOutQuad");
+
+        setTimeout(function () {
+          body.setAttribute("animation__release", "property: scale; to: 1 1 1; dur: 260; easing: easeOutElastic");
+          handle.setAttribute("animation__return", "property: position; to: -0.62 0.45 0; dur: 260; easing: easeOutElastic");
+        }, 170);
+      }
+
+      function updateHeatIndicators() {
+        for (var i = 1; i <= 3; i += 1) {
+          var dot = document.querySelector("#heatDot" + i);
+          if (!dot) continue;
+          var active = i <= bellowsPulls;
+          dot.setAttribute("color", active ? "#ffb13d" : "#3b2a1c");
+          dot.setAttribute("material", active ? "emissive: #ff6a00; emissiveIntensity: 1.7" : "");
+        }
+      }
+
+      function createFurnaceFireEmoji(furnace, count) {
+        if (!furnace) return;
+        var container = furnace.querySelector("#furnaceFireEmoji");
+        if (!container) {
+          container = document.createElement("a-entity");
+          container.id = "furnaceFireEmoji";
+          container.setAttribute("position", "0 0.52 0");
+          furnace.appendChild(container);
+        }
+        var glyphs = ["🔥", "🔥", "✨"];
+        for (var i = 0; i < count; i += 1) {
+          var node = document.createElement("a-text");
+          node.setAttribute("value", glyphs[i % glyphs.length]);
+          node.setAttribute("align", "center");
+          node.setAttribute("width", "2.4");
+          node.setAttribute("scale", "1.6 1.6 1.6");
+          node.setAttribute(
+            "position",
+            (Math.random() - 0.5) * 0.38 + " " + (Math.random() * 0.22) + " " + ((Math.random() - 0.5) * 0.24)
+          );
+          node.setAttribute("face-camera", "");
+          container.appendChild(node);
+          setTimeout(
+            (function (el) {
+              return function () {
+                el.remove();
+              };
+            })(node),
+            850 + Math.random() * 450
+          );
+        }
+      }
+
+      function createBellowsAirPuff() {
+        createFurnaceFireEmoji(document.querySelector("#furnace"), 2);
+      }
+
+      function addFurnaceGlow(furnace, intensity, color) {
+        var glow = document.createElement("a-light");
+        glow.setAttribute("type", "point");
+        glow.setAttribute("color", color);
+        glow.setAttribute("intensity", String(intensity));
+        glow.setAttribute("distance", "7");
+        glow.setAttribute("position", "0 0.35 0");
+        furnace.appendChild(glow);
+      }
+
+      function createFurnaceEmbers(furnace, count, heightBoost) {
+        return;
+        for (var i = 0; i < count; i += 1) {
+          var ember = document.createElement("a-entity");
+          ember.setAttribute("mixin", "spark");
+          ember.setAttribute("position", (Math.random() - 0.5) * 0.45 + " 0.28 " + (Math.random() - 0.5) * 0.45);
+          ember.setAttribute("scale", "0.55 0.55 0.55");
+          ember.setAttribute("spark-move", {
+            vx: (Math.random() - 0.5) * 0.28,
+            vy: heightBoost + Math.random() * 0.95,
+            vz: (Math.random() - 0.5) * 0.28,
+            life: 700 + Math.random() * 420,
+          });
+          furnace.appendChild(ember);
+        }
+      }
+
+      function launchIronFlower(x, y, z) {
+        var root = document.querySelector("#fireworks");
+        var origin = new THREE.Vector3(x, y, z + 0.65);
+        var burst = new THREE.Vector3(x, y, z);
+
+        createIronComet(root, origin, burst);
+        createShockRing(root, x, y, z);
+        createFlash(root, x, y, z, 11, 11, 760);
+
+        for (var i = 0; i < 280; i += 1) {
+          var spark = document.createElement("a-entity");
+          var angle = THREE.MathUtils.degToRad(-18 + Math.random() * 216);
+          var fan = Math.pow(Math.random(), 0.55);
+          var speed = 1.4 + Math.random() * 6.8;
+          var size = 0.45 + Math.random() * 1.8;
+          var delay = Math.random() * 180;
+
+          spark.setAttribute("mixin", "spark");
+          spark.setAttribute("position", x + " " + y + " " + z);
+          spark.setAttribute("scale", size + " " + size + " " + size);
+          spark.setAttribute(
+            "material",
+            "color: " +
+              randomFireColor() +
+              "; emissive: #ff6a00; emissiveIntensity: " +
+              (2.4 + Math.random() * 2.8) +
+              "; transparent: true; opacity: 1"
+          );
+          spark.setAttribute("spark-move", {
+            vx: Math.cos(angle) * speed * fan,
+            vy: 0.35 + Math.random() * 3.8,
+            vz: -Math.abs(Math.sin(angle)) * speed * 0.5 - Math.random() * 0.65,
+            gravity: 0.035 + Math.random() * 0.04,
+            life: 950 + Math.random() * 1050,
+            delay: delay,
+            trail: Math.random() > 0.34,
+          });
+          root.appendChild(spark);
+        }
+
+        for (var j = 0; j < 110; j += 1) {
+          var ember = document.createElement("a-entity");
+          var drift = THREE.MathUtils.degToRad(25 + Math.random() * 130);
+          var emberSpeed = 0.6 + Math.random() * 2.4;
+          ember.setAttribute("mixin", "spark");
+          ember.setAttribute("position", (x + (Math.random() - 0.5) * 2.2) + " " + (y + 1.25 + Math.random() * 1.2) + " " + (z - 0.55 - Math.random() * 1.2));
+          ember.setAttribute("scale", "0.55 0.55 0.55");
+          ember.setAttribute("material", "color: #ffb13d; emissive: #ff5a14; emissiveIntensity: 2.2; transparent: true; opacity: 0.85");
+          ember.setAttribute("spark-move", {
+            vx: Math.cos(drift) * emberSpeed * 0.45,
+            vy: -0.25 - Math.random() * 0.65,
+            vz: -Math.sin(drift) * emberSpeed * 0.18,
+            gravity: 0.018,
+            life: 1500 + Math.random() * 1500,
+            delay: 180 + Math.random() * 450,
+            trail: false,
+          });
+          root.appendChild(ember);
+        }
+      }
+
+      function createIronComet(root, origin, burst) {
+        var comet = document.createElement("a-entity");
+        comet.setAttribute("geometry", "primitive: sphere; radius: 0.075");
+        comet.setAttribute("material", "color: #fff4c1; emissive: #ff6a00; emissiveIntensity: 4.5; transparent: true; opacity: 1");
+        comet.setAttribute("position", origin.x + " " + origin.y + " " + origin.z);
+        comet.setAttribute("comet-flight", {
+          toX: burst.x,
+          toY: burst.y,
+          toZ: burst.z,
+          life: 360,
+        });
+        root.appendChild(comet);
+      }
+
+      function createShockRing(root, x, y, z) {
+        var ring = document.createElement("a-ring");
+        ring.setAttribute("position", x + " " + y + " " + z);
+        ring.setAttribute("rotation", "0 0 0");
+        ring.setAttribute("radius-inner", "0.12");
+        ring.setAttribute("radius-outer", "0.16");
+        ring.setAttribute("color", "#fff4c1");
+        ring.setAttribute("material", "shader: flat; transparent: true; opacity: 0.86; side: double");
+        ring.setAttribute("shock-ring", "");
+        root.appendChild(ring);
+      }
+
+      function createFlash(root, x, y, z, intensity, distance, life) {
+        var flash = document.createElement("a-light");
+        flash.setAttribute("type", "point");
+        flash.setAttribute("color", "#ffb13d");
+        flash.setAttribute("intensity", String(intensity));
+        flash.setAttribute("distance", String(distance));
+        flash.setAttribute("position", x + " " + y + " " + z);
+        flash.setAttribute("flash-fade", { intensity: intensity, life: life });
+        root.appendChild(flash);
+      }
+
+      AFRAME.registerComponent("spark-move", {
+        schema: {
+          vx: { default: 0 },
+          vy: { default: 1 },
+          vz: { default: 0 },
+          gravity: { default: 0.045 },
+          life: { default: 1000 },
+          delay: { default: 0 },
+          trail: { default: false },
+        },
+
+        init: function () {
+          this.birth = performance.now();
+          this.lastTrail = 0;
+          this.startScale = this.el.object3D.scale.clone();
+          if (this.data.delay > 0) {
+            this.el.object3D.visible = false;
+          }
+        },
+
+        tick: function () {
+          var now = performance.now();
+          var age = now - this.birth - this.data.delay;
+          if (age < 0) return;
+          this.el.object3D.visible = true;
+          var progress = age / this.data.life;
+
+          this.el.object3D.position.x += this.data.vx / 60;
+          this.el.object3D.position.y += this.data.vy / 60;
+          this.el.object3D.position.z += this.data.vz / 60;
+          this.data.vy -= this.data.gravity;
+
+          var fade = Math.max(0, 1 - progress);
+          this.el.object3D.scale.copy(this.startScale).multiplyScalar(0.35 + fade * 0.95);
+          this.el.setAttribute("material", "opacity", fade);
+
+          if (this.data.trail && now - this.lastTrail > 42 && fade > 0.16) {
+            this.lastTrail = now;
+            createTrailDot(this.el.parentElement, this.el.object3D.position, fade);
+          }
+
+          if (progress >= 1 || this.el.object3D.position.y < 0) {
+            this.el.remove();
+          }
+        },
+      });
+
+      function createTrailDot(root, position, fade) {
+        if (!root) return;
+        if (root.children.length > 650) return;
+        var dot = document.createElement("a-entity");
+        dot.setAttribute("geometry", "primitive: sphere; radius: 0.018");
+        dot.setAttribute("position", position.x + " " + position.y + " " + position.z);
+        dot.setAttribute("material", "color: #ffd06a; emissive: #ff5a14; emissiveIntensity: 1.8; transparent: true; opacity: " + Math.min(0.72, fade));
+        dot.setAttribute("trail-fade", "");
+        root.appendChild(dot);
+      }
+
+      AFRAME.registerComponent("trail-fade", {
+        init: function () {
+          this.birth = performance.now();
+          this.startScale = this.el.object3D.scale.clone();
+        },
+
+        tick: function () {
+          var progress = (performance.now() - this.birth) / 420;
+          this.el.object3D.scale.copy(this.startScale).multiplyScalar(Math.max(0.05, 1 - progress));
+          this.el.setAttribute("material", "opacity", Math.max(0, 0.72 * (1 - progress)));
+          if (progress >= 1) this.el.remove();
+        },
+      });
+
+      AFRAME.registerComponent("comet-flight", {
+        schema: {
+          toX: { default: 0 },
+          toY: { default: 0 },
+          toZ: { default: 0 },
+          life: { default: 360 },
+        },
+
+        init: function () {
+          this.birth = performance.now();
+          this.from = this.el.object3D.position.clone();
+          this.to = new THREE.Vector3(this.data.toX, this.data.toY, this.data.toZ);
+        },
+
+        tick: function () {
+          var progress = Math.min((performance.now() - this.birth) / this.data.life, 1);
+          var eased = 1 - Math.pow(1 - progress, 3);
+          this.el.object3D.position.lerpVectors(this.from, this.to, eased);
+          this.el.setAttribute("material", "opacity", 1 - progress * 0.25);
+          createTrailDot(this.el.parentElement, this.el.object3D.position, 0.9);
+          if (progress >= 1) this.el.remove();
+        },
+      });
+
+      AFRAME.registerComponent("shock-ring", {
+        init: function () {
+          this.birth = performance.now();
+        },
+
+        tick: function () {
+          var progress = (performance.now() - this.birth) / 680;
+          var scale = 1 + progress * 9;
+          this.el.object3D.scale.set(scale, scale, scale);
+          this.el.setAttribute("material", "opacity", Math.max(0, 0.86 * (1 - progress)));
+          if (progress >= 1) this.el.remove();
+        },
+      });
+
+      AFRAME.registerComponent("flash-fade", {
+        schema: {
+          intensity: { default: 7 },
+          life: { default: 450 },
+        },
+
+        init: function () {
+          this.birth = performance.now();
+        },
+
+        tick: function () {
+          var progress = (performance.now() - this.birth) / this.data.life;
+          this.el.setAttribute("intensity", this.data.intensity * Math.max(0, 1 - progress));
+
+          if (progress >= 1) {
+            this.el.remove();
+          }
+        },
+      });
+
+      function randomFireColor() {
+        var colors = ["#fff4c1", "#ffd06a", "#ff9d1e", "#ff5a14", "#db1f13"];
+        return colors[Math.floor(Math.random() * colors.length)];
+      }
+
+      window.addEventListener("load", function () {
+        var scene = document.querySelector("a-scene");
+        var startButton = document.querySelector("#startButton");
+        applySceneShell();
+        document.querySelector("#langToggle").addEventListener("click", toggleLanguage);
+        startButton.addEventListener("click", startGame);
+        var extractMoltenBtn = document.querySelector("#extractMoltenBtn");
+        if (extractMoltenBtn) extractMoltenBtn.addEventListener("click", finishMaterialPrep);
+        document.addEventListener("keydown", function (event) {
+          if (gameStarted) return;
+          if (event.code === "Enter" || event.code === "Space") {
+            event.preventDefault();
+            startGame();
+          }
+        });
+        document.querySelector("#choiceYes").addEventListener("click", confirmChoice);
+        document.querySelector("#choiceNo").addEventListener("click", closeChoicePanel);
+        applyLanguage();
+        updateHeatZoneLabels();
+        setInitialScenePreview();
+        if (storyMode && pageQuery.get("phase") === "heating") {
+          startGame();
+        }
+        scene.setAttribute("manual-interaction", "");
+        scene.setAttribute("materials-vr-ui", "debounceMs: 280");
+        scene.setAttribute("heating-progress-loop", "");
+        scene.addEventListener("enter-vr", function () {
+          document.body.classList.add("vr-active");
+          closeChoicePanel();
+          applyMaterialVrView();
+          if (scene.components && scene.components["manual-interaction"]) {
+            scene.components["manual-interaction"].onEnterVr();
+          }
+          if (scene.components && scene.components["materials-vr-ui"]) {
+            scene.components["materials-vr-ui"].onEnterVr();
+          }
+          if (currentSceneStep === 1 && !materialSelectionComplete) {
+            setStatus(
+              pageScene === "perform-prep"
+                ? "VR：射线点击材料查看名称并加入熔炉"
+                : "VR 选材料：射线点击材料，弹窗会悬浮在物品上方",
+              pageScene === "perform-prep"
+                ? "VR: point at materials to see names and add them"
+                : "VR material selection: point and click; a panel floats above the item"
+            );
+          } else if (pageScene === "perform-prep" && materialSelectionComplete && !moltenIronReady) {
+            setStatus("VR：按住风箱 3 秒完成加热", "VR: hold the bellows for 3 seconds");
+          } else if (pageScene === "perform-prep" && moltenIronReady) {
+            setStatus("VR：点击「取出铁水」完成准备", "VR: click Extract Molten Iron to finish");
+          } else {
+            setStatus("已进入 VR：转头环顾，点击交互", "VR mode active: look around and interact");
+          }
+        });
+        scene.addEventListener("exit-vr", function () {
+          document.body.classList.remove("vr-active");
+          closeChoicePanel();
+          applyMaterialVrView();
+          setStatus("已退出 VR：电脑可用 WASD / QE 移动，按住鼠标拖拽环顾", "Exited VR: use WASD / QE to move, hold mouse drag to look around");
+        });
+        document.querySelector("#furnaceHotspot").setAttribute("furnace-step", "");
+        document.querySelector("#bellowsHotspot").setAttribute("bellows-step", "");
+        initMaterialSelectRings();
+        document.querySelector("#rig").setAttribute("pico-thumbstick-move", "speed: 1.8; turnSpeed: 90; verticalSpeed: 1.2");
+        document.querySelector("#rig").setAttribute("desktop-fly-controls", "speed: 2.4; verticalSpeed: 1.8");
+        if (window.IronFlowerEntry) {
+          scene.addEventListener("loaded", function () {
+            window.IronFlowerEntry.tryAutoEnterVr(scene);
+          }, { once: true });
+          if (scene.hasLoaded) window.IronFlowerEntry.tryAutoEnterVr(scene);
+        }
+        document.querySelectorAll(".material-item").forEach(function (item) {
+          var choiceAttr = item.getAttribute("material-choice");
+          if (item.components && item.components["material-choice"]) {
+            item.removeAttribute("material-choice");
+          }
+          item.setAttribute("material-choice", choiceAttr);
+        });
+        if (scene.hasLoaded) {
+          setTimeout(randomizeMaterialPositions, 0);
+        } else {
+          scene.addEventListener("loaded", function () {
+            randomizeMaterialPositions();
+          });
+        }
+        document.querySelector("#languageSwitch").setAttribute("language-switch", "");
+        startGame();
+      });
+    </script>
+  </body>
+</html>

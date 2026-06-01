@@ -1,0 +1,7 @@
+{
+  "$schema": "ironflower-leaderboard/v1",
+  "description": "排行榜数据格式说明（本机专用）。实际记录保存在浏览器 localStorage，不联网、不与他人共享；仅保留前 5 名。",
+  "maxEntries": 5,
+  "lastUpdated": null,
+  "entries": []
+}

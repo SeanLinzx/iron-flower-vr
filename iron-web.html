@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>铜官窑打铁花｜Web 版 · 模式选择</title>
+    <script src="./js/app-entry.js?v=20260601-entry"></script>
+    <style>
+      :root {
+        color-scheme: dark;
+        --gold: #ffbd42;
+        --gold-soft: #ffe0a1;
+        --ink: #070402;
+        --panel: rgba(16, 9, 5, 0.72);
+        --line: rgba(255, 189, 66, 0.34);
+        --cyan: #48d6d2;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--ink);
+        color: #fff6df;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      body {
+        display: flex;
+        align-items: stretch;
+        background:
+          linear-gradient(90deg, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.18) 42%, rgba(0, 0, 0, 0.58)),
+          linear-gradient(180deg, rgba(4, 8, 18, 0.12), rgba(4, 6, 14, 0.78)),
+          url("./assets/backgrounds/start-nano.png") center / cover no-repeat;
+      }
+
+      main {
+        position: relative;
+        z-index: 2;
+        width: min(1160px, calc(100vw - 40px));
+        margin: 0 auto;
+        padding: clamp(28px, 5vw, 64px) 0;
+        display: grid;
+        grid-template-columns: minmax(280px, 0.9fr) minmax(320px, 1.1fr);
+        gap: clamp(24px, 5vw, 72px);
+        align-items: end;
+      }
+
+      .brand {
+        min-height: min(660px, calc(100vh - 96px));
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        text-shadow: 0 4px 26px rgba(0, 0, 0, 0.86);
+      }
+
+      .kicker {
+        margin: 0 0 16px;
+        color: var(--gold);
+        font-size: clamp(14px, 1.8vw, 18px);
+      }
+
+      h1 {
+        margin: 0;
+        max-width: 680px;
+        color: #fff2a8;
+        font-size: clamp(64px, 11vw, 154px);
+        font-style: italic;
+        font-weight: 950;
+        line-height: 0.84;
+        letter-spacing: 0;
+        text-transform: uppercase;
+        transform: skewX(-8deg);
+        filter: drop-shadow(0 0 22px rgba(255, 176, 46, 0.38));
+      }
+
+      .subtitle {
+        margin: 20px 0 0;
+        max-width: 620px;
+        color: #ffe8b0;
+        font-size: clamp(16px, 2.1vw, 23px);
+        line-height: 1.45;
+      }
+
+      .credit {
+        margin: 32px 0 0;
+        color: #cfeef2;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .credit-members {
+        margin: 8px 0 0;
+        color: rgba(207, 238, 242, 0.88);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      .mode-panel {
+        width: 100%;
+        padding: clamp(18px, 3vw, 30px);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        box-shadow: 0 30px 90px rgba(0, 0, 0, 0.46);
+        backdrop-filter: blur(10px);
+      }
+
+      .mode-panel h2 {
+        margin: 0 0 16px;
+        color: #fff8ce;
+        font-size: 22px;
+        letter-spacing: 0;
+      }
+
+      .entry-badge {
+        display: inline-block;
+        margin-bottom: 14px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(72, 214, 210, 0.45);
+        color: var(--cyan);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+
+      .story-link,
+      .level-link {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .story-link {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        min-height: 92px;
+        margin-bottom: 20px;
+        padding: 20px 22px;
+        border: 1px solid rgba(255, 224, 161, 0.48);
+        border-radius: 6px;
+        background: rgba(255, 189, 66, 0.18);
+        transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+      }
+
+      .story-link:hover,
+      .story-link:focus-visible,
+      .level-link:hover,
+      .level-link:focus-visible {
+        transform: translateY(-2px);
+        border-color: rgba(255, 224, 161, 0.8);
+        outline: none;
+      }
+
+      .story-title,
+      .level-title {
+        display: block;
+        color: #fff8ce;
+        font-size: 18px;
+        font-weight: 800;
+      }
+
+      .story-text,
+      .level-text {
+        display: block;
+        margin-top: 6px;
+        color: rgba(255, 232, 176, 0.86);
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .arrow {
+        flex: 0 0 auto;
+        display: grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 224, 161, 0.42);
+        color: var(--gold-soft);
+        font-size: 24px;
+      }
+
+      .levels {
+        display: grid;
+        gap: 12px;
+      }
+
+      .level-link {
+        display: grid;
+        grid-template-columns: 48px 1fr;
+        gap: 14px;
+        align-items: center;
+        min-height: 84px;
+        padding: 14px;
+        border: 1px solid rgba(255, 189, 66, 0.25);
+        border-radius: 6px;
+        background: rgba(6, 4, 3, 0.5);
+        transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+      }
+
+      .level-index {
+        display: grid;
+        place-items: center;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: 1px solid rgba(72, 214, 210, 0.54);
+        color: var(--cyan);
+        font-weight: 900;
+      }
+
+      .footer-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .footer-links a {
+        color: #d8eef8;
+        font-size: 13px;
+      }
+
+      .switch-entry {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 14px;
+        padding: 10px 16px;
+        border: 1px solid rgba(255, 189, 66, 0.55);
+        border-radius: 999px;
+        background: rgba(255, 189, 66, 0.12);
+        color: #fff8ce;
+        font-size: 14px;
+        font-weight: 700;
+        text-decoration: none;
+        transition: background 160ms ease, transform 160ms ease;
+      }
+
+      .switch-entry:hover,
+      .switch-entry:focus-visible {
+        background: rgba(255, 189, 66, 0.22);
+        transform: translateY(-1px);
+        outline: none;
+      }
+
+      @media (max-width: 820px) {
+        body {
+          align-items: flex-start;
+          overflow: auto;
+        }
+
+        main {
+          grid-template-columns: 1fr;
+          align-items: start;
+        }
+
+        .brand {
+          min-height: auto;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main>
+      <section class="brand" aria-labelledby="pageTitle">
+        <div>
+          <p class="kicker">Tongguan Kiln Iron Flower · Web</p>
+          <h1 id="pageTitle">Iron Soul</h1>
+          <p class="subtitle">铜官窑 · 打铁花 / Tongguan Kiln · Iron Flower</p>
+        </div>
+        <div>
+          <p class="credit">设计前沿专题研究-组2 / Design Frontiers Research - Group 2</p>
+          <p class="credit-members">郑瑞啸、文欣橦、张婷婷、万钰、林铮翔</p>
+        </div>
+      </section>
+
+      <section class="mode-panel" aria-label="模式选择">
+        <span class="entry-badge">Web 浏览器版</span>
+        <h2>选择体验模式</h2>
+
+        <a class="story-link" href="./story-image.html?story=1&amp;step=start-2">
+          <span>
+            <span class="story-title">故事模式</span>
+            <span class="story-text">先阅读故事图片，再依次进入素材、练习与表演场景；表演得分决定结局画面。</span>
+          </span>
+          <span class="arrow" aria-hidden="true">›</span>
+        </a>
+
+        <h2>关卡模式</h2>
+        <div class="levels">
+          <a class="level-link" href="./scene-materials.html?mode=level">
+            <span class="level-index">1</span>
+            <span>
+              <span class="level-title">准备素材的场景</span>
+              <span class="level-text">选择材料、入炉、控温融铁。</span>
+            </span>
+          </a>
+          <a class="level-link" href="./scene-practice.html?mode=level">
+            <span class="level-index">2</span>
+            <span>
+              <span class="level-title">练习场景</span>
+              <span class="level-text">完成四关节奏练习，获得表演资格。</span>
+            </span>
+          </a>
+          <a class="level-link" href="./scene-prepare-performance.html?mode=level">
+            <span class="level-index">3</span>
+            <span>
+              <span class="level-title">表演材料准备</span>
+              <span class="level-text">表演前选材料、拉风箱并取出铁水。</span>
+            </span>
+          </a>
+          <a class="level-link" href="./scene-performance.html?mode=level">
+            <span class="level-index">4</span>
+            <span>
+              <span class="level-title">表演场景</span>
+              <span class="level-text">进入正式表演，击打铁花并得到观众反馈。</span>
+            </span>
+          </a>
+        </div>
+
+        <div class="footer-links">
+          <a href="./leaderboard.html">得分排行榜（前 5 名）</a>
+          <a href="./iron_v0.1.html">查看旧版本</a>
+        </div>
+
+        <a class="switch-entry" href="./iron-vr.html">切换到 VR 版本 →</a>
+      </section>
+    </main>
+
+    <script>
+      window.IronFlowerEntry.markWeb();
+    </script>
+  </body>
+</html>

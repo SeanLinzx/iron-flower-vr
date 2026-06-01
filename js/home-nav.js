@@ -1,12 +1,16 @@
 (function () {
-  var HOME_PATH = "./iron.html";
   var COPY = {
     zh: { label: "返回首页", sublabel: "主菜单" },
     en: { label: "Home", sublabel: "Main menu" },
   };
 
   function resolveHomeHref() {
-    return HOME_PATH;
+    if (window.IronFlowerEntry) return window.IronFlowerEntry.getHomeHref();
+    return "./iron-web.html";
+  }
+
+  function navigateHome() {
+    window.location.href = resolveHomeHref();
   }
 
   function applyLanguage(lang) {
@@ -22,17 +26,47 @@
 
     var nav3d = document.getElementById("homeNav3d");
     if (nav3d) {
-      nav3d.setAttribute(
-        "canvas-button",
-        "label: " +
-          pack.label +
-          "; sublabel: " +
-          pack.sublabel +
-          "; href: " +
-          HOME_PATH +
-          "; width: 1.28; height: 0.4; background: rgba(6, 4, 3, 0.8); border: rgba(255, 189, 66, 0.55)"
-      );
+      var label = nav3d.querySelector("[data-home-nav-label]");
+      var sublabel = nav3d.querySelector("[data-home-nav-sublabel]");
+      if (label) label.setAttribute("value", pack.label);
+      if (sublabel) sublabel.setAttribute("value", pack.sublabel);
+      if (nav3d.hasAttribute("canvas-button")) {
+        nav3d.setAttribute(
+          "canvas-button",
+          "label: " +
+            pack.label +
+            "; sublabel: " +
+            pack.sublabel +
+            "; href: " +
+            href +
+            "; width: 1.28; height: 0.4; background: rgba(6, 4, 3, 0.8); border: rgba(255, 189, 66, 0.55)"
+        );
+      }
     }
+  }
+
+  function bindVrHomeNav() {
+    var nav3d = document.getElementById("homeNav3d");
+    if (!nav3d) return;
+    if (!nav3d.__homeNavClickBound) {
+      nav3d.__homeNavClickBound = true;
+      nav3d.addEventListener("click", function (event) {
+        event.stopPropagation();
+        navigateHome();
+      });
+    }
+
+    var scene = document.querySelector("a-scene");
+    if (!scene || scene.__homeNavVrBound) return;
+    scene.__homeNavVrBound = true;
+    var sync = function () {
+      var inVr = scene.is && scene.is("vr-mode");
+      nav3d.setAttribute("visible", inVr ? "true" : "false");
+    };
+    scene.addEventListener("enter-vr", sync);
+    scene.addEventListener("exit-vr", sync);
+    scene.addEventListener("loaded", sync);
+    sync();
   }
 
   function ensureDesktopNav() {
@@ -55,11 +89,14 @@
   function init() {
     ensureDesktopNav();
     applyLanguage("zh");
+    bindVrHomeNav();
   }
 
   window.IronFlowerHomeNav = {
     applyLanguage: applyLanguage,
     homeHref: resolveHomeHref,
+    navigateHome: navigateHome,
+    bindVrHomeNav: bindVrHomeNav,
   };
 
   if (document.readyState === "loading") {

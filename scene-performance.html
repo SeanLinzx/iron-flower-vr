@@ -387,7 +387,7 @@
 
     <div class="overlay">
       <div class="home-nav-row">
-        <a id="homeNavLink" class="home-nav-link" href="./iron.html">返回首页</a>
+        <a id="homeNavLink" class="home-nav-link" href="./iron-web.html">返回首页</a>
       </div>
       <span class="badge">Iron Flower VR Prototype</span>
       <div class="overlay-row">
@@ -421,6 +421,10 @@
     >
       <a-assets timeout="120000">
         <img id="performancePanorama" crossorigin="anonymous" src="./assets/backgrounds/per.png" />
+        <a-asset-item id="personModel1Asset" src="./人物模型1/4df5a557-e5dc-43f5-a4ad-05ac560be566.glb"></a-asset-item>
+        <a-asset-item id="personModel2Asset" src="./人物模型2/4795824a-ac11-4adc-9ada-d5666b0dda4a.glb"></a-asset-item>
+        <a-asset-item id="performanceFurnaceAsset" src="./燃烧熔铁炉/b45a0d6e-f521-4c08-9bb0-5739077b35d4.glb"></a-asset-item>
+        <a-asset-item id="shovelAsset" src="./模型1/铁锹/249b749e-8bc3-4492-bff4-7bc3acb5946c.glb"></a-asset-item>
         <a-mixin
           id="spark"
           geometry="primitive: sphere; radius: 0.025"
@@ -658,7 +662,7 @@
         face-camera
       ></a-entity>
 
-      <a-entity id="rhythmGame" position="0 0 -3.5" visible="false">
+      <a-entity id="rhythmGame" position="0 0 -2.4" visible="false">
         <a-entity id="rhythmTitle" position="0 3.35 0" canvas-label="text: Performance Mode|Tap Start Show to begin; width: 4.6; height: 0.72" face-camera></a-entity>
         <a-text id="rhythmHud" value="Performance  Time 60  Score 0" align="center" width="5.4" position="0 2.78 0" color="#fff4d2"></a-text>
         <a-text id="rhythmFeedback" value="" align="center" width="4.2" position="0 1.5 0.06" color="#fff4d2" visible="false"></a-text>
@@ -678,26 +682,6 @@
           practice-start-btn="label: 表演结束; detail: "
           face-camera
         ></a-entity>
-        <a-entity id="moltenThrowers">
-          <a-entity class="molten-thrower" data-lane="0" position="-3.05 0 -4.35" rotation="0 32 0">
-            <a-cylinder position="0 0.42 0" radius="0.11" height="0.84" color="#3d2418" material="roughness: 0.82"></a-cylinder>
-            <a-sphere position="0 0.98 0" radius="0.13" color="#e8b080"></a-sphere>
-            <a-cylinder class="thrower-arm" position="0.14 0.72 0.06" radius="0.028" height="0.38" rotation="0 0 -72" color="#5c2a11"></a-cylinder>
-            <a-sphere class="thrower-glow" position="0.34 1.02 0.12" radius="0.04" color="#ff8a22" material="emissive: #ff4a00; emissiveIntensity: 1.2; transparent: true; opacity: 0.5" visible="false"></a-sphere>
-          </a-entity>
-          <a-entity class="molten-thrower" data-lane="1" position="0 0 -4.55" rotation="0 180 0">
-            <a-cylinder position="0 0.42 0" radius="0.11" height="0.84" color="#4a2c1c" material="roughness: 0.82"></a-cylinder>
-            <a-sphere position="0 0.98 0" radius="0.13" color="#f0b888"></a-sphere>
-            <a-cylinder class="thrower-arm" position="-0.14 0.72 0.06" radius="0.028" height="0.38" rotation="0 0 -72" color="#6a3214"></a-cylinder>
-            <a-sphere class="thrower-glow" position="-0.34 1.02 0.12" radius="0.04" color="#ff8a22" material="emissive: #ff4a00; emissiveIntensity: 1.2; transparent: true; opacity: 0.5" visible="false"></a-sphere>
-          </a-entity>
-          <a-entity class="molten-thrower" data-lane="2" position="3.05 0 -4.35" rotation="0 -32 0">
-            <a-cylinder position="0 0.42 0" radius="0.11" height="0.84" color="#352218" material="roughness: 0.82"></a-cylinder>
-            <a-sphere position="0 0.98 0" radius="0.13" color="#ddb080"></a-sphere>
-            <a-cylinder class="thrower-arm" position="-0.14 0.72 0.06" radius="0.028" height="0.38" rotation="0 0 -72" color="#5c2a11"></a-cylinder>
-            <a-sphere class="thrower-glow" position="-0.34 1.02 0.12" radius="0.04" color="#ff8a22" material="emissive: #ff4a00; emissiveIntensity: 1.2; transparent: true; opacity: 0.5" visible="false"></a-sphere>
-          </a-entity>
-        </a-entity>
         <a-entity id="rhythmLanes"></a-entity>
         <a-entity id="rhythmNotes"></a-entity>
       </a-entity>
@@ -729,6 +713,60 @@
       </a-entity>
 
       <a-entity
+        id="personModelMirror"
+        position="-2.4 0 -2.5"
+        rotation="0 24 0"
+        scale="-0.85 0.85 0.85"
+        person-throw-loop="period: 3350; offset: 900; groundY: 0; lean: 6"
+        shadow="cast: true; receive: true"
+        visible="false"
+      >
+        <a-entity id="personPoseRest" gltf-model="#personModel1Asset" shadow="cast: true; receive: true"></a-entity>
+        <a-entity id="personPoseThrow" gltf-model="#personModel2Asset" shadow="cast: true; receive: true"></a-entity>
+      </a-entity>
+
+      <a-entity
+        id="personModel1"
+        position="2.4 0 -2.5"
+        rotation="0 -24 0"
+        scale="0.85 0.85 0.85"
+        person-throw-loop="period: 2950; offset: 0; groundY: 0; lean: 6"
+        shadow="cast: true; receive: true"
+        visible="false"
+      >
+        <a-entity id="personPoseRest" gltf-model="#personModel1Asset" shadow="cast: true; receive: true"></a-entity>
+        <a-entity id="personPoseThrow" gltf-model="#personModel2Asset" shadow="cast: true; receive: true"></a-entity>
+      </a-entity>
+
+      <a-entity
+        id="performanceFurnaceMirror"
+        position="-1.88 0 -2.62"
+        rotation="0 18 0"
+        scale="0.36 0.36 0.36"
+        gltf-model="#performanceFurnaceAsset"
+        stand-on-ground="groundY: 0"
+        shadow="cast: true; receive: true"
+        visible="false"
+      >
+        <a-light type="point" position="0 1.08 0" color="#ff6a00" intensity="2.4" distance="2.6" fire-flicker="base: 2.1; range: 0.7; speed: 0.006"></a-light>
+        <a-light type="point" position="-0.08 1.2 0.06" color="#ffd06a" intensity="1.2" distance="1.7" fire-flicker="base: 1; range: 0.45; speed: 0.008"></a-light>
+      </a-entity>
+
+      <a-entity
+        id="performanceFurnace"
+        position="1.88 0 -2.62"
+        rotation="0 -18 0"
+        scale="0.36 0.36 0.36"
+        gltf-model="#performanceFurnaceAsset"
+        stand-on-ground="groundY: 0"
+        shadow="cast: true; receive: true"
+        visible="false"
+      >
+        <a-light type="point" position="0 1.08 0" color="#ff6a00" intensity="2.4" distance="2.6" fire-flicker="base: 2.1; range: 0.7; speed: 0.006"></a-light>
+        <a-light type="point" position="-0.08 1.2 0.06" color="#ffd06a" intensity="1.2" distance="1.7" fire-flicker="base: 1; range: 0.45; speed: 0.008"></a-light>
+      </a-entity>
+
+      <a-entity
         id="ladle"
         class="clickable"
         position="3.6 0.82 -3.4"
@@ -737,18 +775,14 @@
         material="transparent: true; opacity: 0"
         pickable
       >
-        <a-cylinder position="-0.48 0 0" radius="0.22" height="0.13" color="#2b170c" material="metalness: 0.4; roughness: 0.35"></a-cylinder>
-        <a-torus position="-0.48 0.08 0" radius="0.23" radius-tubular="0.025" color="#8a521f"></a-torus>
-        <a-cylinder position="-0.72 0.03 0" radius="0.018" height="0.55" rotation="0 0 92" color="#8a521f"></a-cylinder>
-        <a-box position="0.44 0 0" width="0.72" height="0.08" depth="0.32" color="#7c3a16"></a-box>
-        <a-cylinder position="0.95 0 0" radius="0.025" height="0.72" rotation="0 0 90" color="#5c2a11"></a-cylinder>
-        <a-text id="ladleSmallText" value="取铁碗和拍板" align="center" width="2.8" position="0 0.42 0" color="#ffd37a"></a-text>
+        <a-entity gltf-model="#shovelAsset" position="0 0 0" rotation="0 0 -20" scale="0.58 0.58 0.58" shadow="cast: true; receive: true"></a-entity>
+        <a-text id="ladleSmallText" value="取铁锹" align="center" width="2.8" position="0 0.42 0" color="#ffd37a" visible="false"></a-text>
       </a-entity>
 
       <a-entity
         id="labelLadle"
         position="3.6 1.68 -3.4"
-        canvas-label="text: 4 取双手工具|After melting: bowl and paddle; width: 3.0; height: 0.66"
+        canvas-label="text: 右手拿铁锹|Take the shovel in your right hand; width: 3.0; height: 0.66"
         face-camera
       ></a-entity>
 
@@ -834,7 +868,7 @@
           class="clickable"
           position="0.55 0.06 0.72"
           face-camera
-          canvas-button="label: 返回首页; sublabel: 主菜单; href: ./iron.html; width: 1.28; height: 0.4; background: rgba(6, 4, 3, 0.8); border: rgba(255, 189, 66, 0.55)"
+          canvas-button="label: 返回首页; sublabel: 主菜单; href: ./iron-web.html; width: 1.28; height: 0.4; background: rgba(6, 4, 3, 0.8); border: rgba(255, 189, 66, 0.55)"
         ></a-entity>
         <a-camera
           id="mainCamera"
@@ -891,11 +925,24 @@
       <a-light type="point" color="#ff9b26" intensity="1.15" distance="12" position="0 2.6 -4.6"></a-light>
     </a-scene>
 
+    <link rel="stylesheet" href="./css/leaderboard.css" />
+    <script src="./js/app-entry.js?v=20260601-entry"></script>
     <script src="./story-flow.js?v=20260531-cg"></script>
+    <script src="./js/leaderboard.js?v=20260601-lb"></script>
+    <script src="./js/leaderboard-ui.js?v=20260601-lb-ui"></script>
     <script src="./js/home-nav.js"></script>
     <script>
       var pageScene = document.body.dataset.scene || "materials";
       var pageQuery = new URLSearchParams(window.location.search);
+
+      function isPerformanceWorkflow() {
+        return pageScene === "performance" || rhythmMode === "performance";
+      }
+
+      function advanceToStrikeStepIfNeeded() {
+        if (isPerformanceWorkflow()) return;
+        setSceneStep(3);
+      }
       var storyMode = pageQuery.get("story") === "1";
       var sceneShell = {
         materials: {
@@ -949,8 +996,8 @@
           furnacePrepared = true;
           moltenIronReady = true;
           setSceneStep(2);
-          ensureRhythmPaddle();
-          setStatus("表演场景：点击开始表演进入节奏打铁花", "Performance scene: tap Start Show to begin the rhythm performance");
+          stopPersonAtRest();
+          setStatus("表演场景：点击工具站拿起铁锹，再点击开始表演", "Performance scene: pick up the shovel at the tool station, then tap Start Show");
           return;
         }
         setSceneStep(1);
@@ -978,11 +1025,14 @@
       var lastLanguageToggle = 0;
       var currentSceneStep = 1;
       var gameStarted = false;
+      var performanceRoundStarted = false;
       var rhythmActive = false;
       var rhythmMode = "practice";
       var rhythmLevel = 1;
       var rhythmStart = 0;
       var rhythmLastSpawn = 0;
+      var rhythmFallbackLane = 0;
+      var performanceSpawnGap = 850;
       var rhythmNotes = [];
       var rhythmMisses = 0;
       var rhythmScore = 0;
@@ -1006,16 +1056,11 @@
             maxReferenceScore: 2400,
           };
       var performanceConfig = {
-        lanes: 3,
-        speed: 1.05,
-        spawn: 820,
+        lanes: 2,
+        speed: 1.45,
+        spawn: 610,
         duration: performanceScoring.durationMs,
       };
-      var rhythmThrower = {
-        arcHeight: 1.08,
-        fallSpan: 2.62,
-      };
-      var rhythmThrowerArcHeights = [1.02, 1.08, 1.05];
       var rhythmConfigs = [
         { lanes: 3, speed: 1.05, spawn: 980, duration: 30000 },
         { lanes: 4, speed: 1.38, spawn: 820, duration: 30000 },
@@ -1046,6 +1091,10 @@
         "labelBellows",
         "rhythmGame",
         "audienceGroup",
+        "personModelMirror",
+        "personModel1",
+        "performanceFurnaceMirror",
+        "performanceFurnace",
         "ladle",
         "labelLadle",
         "strikeTarget",
@@ -1055,8 +1104,8 @@
 
       var sceneSteps = {
         1: ["workshopBackdrop", "materialSelection", "materialProgress", "labelMaterials", "furnace", "materialPrep", "bellows", "bellowsHotspot", "heatingProgress", "temperaturePanel", "labelBellows", "moltenStream"],
-        2: ["rhythmGame", "audienceGroup"],
-        3: ["rhythmGame", "audienceGroup", "kiln-tower", "flowerShed", "labelShed", "labelBloom"],
+        2: ["rhythmGame", "audienceGroup", "personModelMirror", "personModel1", "performanceFurnaceMirror", "performanceFurnace", "ladle", "labelLadle"],
+        3: ["rhythmGame", "audienceGroup", "personModelMirror", "personModel1", "performanceFurnaceMirror", "performanceFurnace", "kiln-tower", "flowerShed", "labelShed", "labelBloom", "ladle", "labelLadle"],
       };
 
       var sceneStepX = {
@@ -1064,6 +1113,12 @@
         2: 0,
         3: 7.2,
       };
+
+      // 正式表演：人物、熔炉与节奏击打区距主视角的深度（Z 越大越靠近玩家）
+      var performanceActorZ = -2.5;
+      var performanceFurnaceZ = -2.62;
+      var performanceRhythmZ = -2.4;
+      var performanceRingZ = -2.37;
 
       // 表演全景背景水平角度（a-sky 的 rotation Y）。调大/调小此值即可左右平移背景。
       var performanceSkyRotationY = -150;
@@ -1073,8 +1128,8 @@
           toggle: "English",
           title: "铜官窑·打铁花",
           intro: "三步体验：选择材料加入炉中、加热点火等待铁水流出、进入表演场景用双手工具打铁花。",
-          ladleSmall: "取铁碗和拍板",
-          targetSmall: "瞄准这里泼拍",
+          ladleSmall: "取铁锹",
+          targetSmall: "拿起后瞄准这里",
           languageHint: "语言切换",
           labels: {
             labelShed: "花棚与柳枝|传统打铁花常设花棚，并用柳枝等材料接住飞溅铁花",
@@ -1082,8 +1137,8 @@
             labelFurnace: "2 加热点火|点击炉子后等待约 5 秒，进度满后铁水流出",
             labelMelt: "铁水流出|铁水已从炉中流出，下一步进入表演场",
             labelBellows: "拉风箱|点击/扳机拉动 3 次，热度满格后融铁",
-            labelLadle: "3 装入双手工具|左手铁碗承接铁水，右手拿拍板",
-            labelStrike: "打铁花|左手泼出铁水，右手拍开形成散射",
+            labelLadle: "右手拿铁锹|点击工具站，右手拿起铁锹",
+            labelStrike: "打铁花|用铁锹击打铁水形成散射",
             labelBloom: "视觉结果|飞散铁粒氧化燃烧，形成铁花",
           },
         },
@@ -1091,8 +1146,8 @@
           toggle: "中文",
           title: "Tongguan Kiln Iron Flower",
           intro: "Three-step experience: select materials into the furnace, heat and wait for molten iron, then enter the performance scene and strike Iron Flower.",
-          ladleSmall: "Pick up bowl and paddle",
-          targetSmall: "Aim here to pour and slap",
+          ladleSmall: "Pick up shovel",
+          targetSmall: "Aim here after picking up",
           languageHint: "Language",
           labels: {
             labelShed: "Flower Shed & Willow Branches|A shed with branches catches and frames the flying sparks",
@@ -1100,8 +1155,8 @@
             labelFurnace: "2 Heat & Ignite|Click the furnace and wait about 5 seconds",
             labelMelt: "Molten Iron Flows|When heating finishes, molten iron flows from the furnace",
             labelBellows: "Pull Bellows|Click or trigger 3 pulls until heat is full",
-            labelLadle: "3 Load Both Tools|Left hand holds bowl, right hand holds paddle",
-            labelStrike: "Perform Iron Flower|Pour with left hand, slap open with right hand",
+            labelLadle: "Take the Shovel|Click the tool station to take the shovel",
+            labelStrike: "Perform Iron Flower|Strike molten iron with the shovel",
             labelBloom: "Visual Result|Iron particles oxidize and burn into flowers",
           },
         },
@@ -1207,7 +1262,24 @@
         if (statusText) statusText.setAttribute("position", x + " 2.45 -3.2");
         if (languageSwitch) languageSwitch.setAttribute("position", x + 1.72 + " 1.92 0.42");
         var rhythmGame = document.querySelector("#rhythmGame");
-        if (rhythmGame) rhythmGame.setAttribute("position", x + " 0 -3.5");
+        if (rhythmGame) rhythmGame.setAttribute("position", x + " 0 " + performanceRhythmZ);
+        updatePerformanceActorsPosition(x);
+      }
+
+      function updatePerformanceActorsPosition(sceneX) {
+        var leftPerson = document.querySelector("#personModelMirror");
+        var rightPerson = document.querySelector("#personModel1");
+        var leftFurnace = document.querySelector("#performanceFurnaceMirror");
+        var rightFurnace = document.querySelector("#performanceFurnace");
+        if (leftPerson) leftPerson.setAttribute("position", sceneX - 2.4 + " 0 " + performanceActorZ);
+        if (rightPerson) rightPerson.setAttribute("position", sceneX + 2.4 + " 0 " + performanceActorZ);
+        if (leftFurnace) leftFurnace.setAttribute("position", sceneX - 1.88 + " 0 " + performanceFurnaceZ);
+        if (rightFurnace) rightFurnace.setAttribute("position", sceneX + 1.88 + " 0 " + performanceFurnaceZ);
+        ["#personModelMirror", "#personModel1"].forEach(function (selector) {
+          var person = document.querySelector(selector);
+          var throwLoop = person && person.components && person.components["person-throw-loop"];
+          if (throwLoop) throwLoop.resetBase();
+        });
       }
 
       AFRAME.registerComponent("canvas-label", {
@@ -1434,13 +1506,185 @@
       });
 
       AFRAME.registerComponent("face-camera", {
+        init: function () {
+          this.inVr = false;
+          this.sceneEl = this.el.sceneEl;
+          this.initialRotation = this.el.object3D.rotation.clone();
+          this.onEnterVr = function () {
+            this.inVr = true;
+            this.el.object3D.rotation.copy(this.initialRotation);
+          }.bind(this);
+          this.onExitVr = function () {
+            this.inVr = false;
+          }.bind(this);
+          this.sceneEl.addEventListener("enter-vr", this.onEnterVr);
+          this.sceneEl.addEventListener("exit-vr", this.onExitVr);
+          if (this.sceneEl.is("vr-mode")) this.inVr = true;
+        },
+
         tick: function () {
+          if (this.inVr) return;
           var camera = document.querySelector("#mainCamera");
           if (!camera) return;
 
           var worldPosition = new THREE.Vector3();
           camera.object3D.getWorldPosition(worldPosition);
           this.el.object3D.lookAt(worldPosition);
+        },
+
+        remove: function () {
+          this.sceneEl.removeEventListener("enter-vr", this.onEnterVr);
+          this.sceneEl.removeEventListener("exit-vr", this.onExitVr);
+        },
+      });
+
+      AFRAME.registerComponent("stand-on-ground", {
+        schema: { groundY: { default: 0 } },
+        init: function () {
+          this.placeOnGround = this.placeOnGround.bind(this);
+          this.el.addEventListener("model-loaded", this.placeOnGround);
+        },
+        placeOnGround: function () {
+          setTimeout(function () {
+            var box = new THREE.Box3().setFromObject(this.el.object3D);
+            if (!isFinite(box.min.y)) return;
+            this.el.object3D.position.y += this.data.groundY - box.min.y;
+            if (this.el.components["person-throw-loop"]) this.el.components["person-throw-loop"].resetBase();
+          }.bind(this), 0);
+        },
+        remove: function () {
+          this.el.removeEventListener("model-loaded", this.placeOnGround);
+        },
+      });
+
+      AFRAME.registerComponent("person-throw-loop", {
+        schema: {
+          period: { default: 2400 },
+          offset: { default: 0 },
+          groundY: { default: 0 },
+          lean: { default: 6 },
+        },
+        init: function () {
+          this.rest = this.el.querySelector("#personPoseRest");
+          this.throwPose = this.el.querySelector("#personPoseThrow");
+          this.baseY = this.el.object3D.position.y;
+          this.baseRotationX = this.el.object3D.rotation.x;
+          this.baseRotationZ = this.el.object3D.rotation.z;
+          this.ready = false;
+          this.stopped = false;
+          this.loadedCount = 0;
+          this.phase = 0;
+          this.progress = 0;
+          this.lastReleaseCycle = -1;
+          this.onModelLoaded = function () {
+            this.loadedCount += 1;
+            this.setPoseOpacity(this.rest, 1);
+            this.setPoseOpacity(this.throwPose, 0);
+            if (this.loadedCount >= 2) {
+              this.alignPoseFeet();
+              this.placeGroupOnGround();
+              this.resetBase();
+              this.ready = true;
+            }
+          }.bind(this);
+          if (this.rest) this.rest.addEventListener("model-loaded", this.onModelLoaded);
+          if (this.throwPose) this.throwPose.addEventListener("model-loaded", this.onModelLoaded);
+          this.setPoseOpacity(this.rest, 1);
+          this.setPoseOpacity(this.throwPose, 0);
+        },
+        resetBase: function () {
+          this.baseY = this.el.object3D.position.y;
+          this.baseRotationX = this.el.object3D.rotation.x;
+          this.baseRotationZ = this.el.object3D.rotation.z;
+        },
+        tick: function (time) {
+          if (!this.rest || !this.throwPose || !this.ready || this.stopped) return;
+          if (rhythmMode === "performance" && !performanceRoundStarted) return;
+          var shiftedTime = time + this.data.offset;
+          var phase = (shiftedTime % this.data.period) / this.data.period;
+          var raw = phase < 0.5 ? phase * 2 : (1 - phase) * 2;
+          var progress = this.easeInOut(raw);
+          this.phase = phase;
+          this.progress = progress;
+          this.cycle = Math.floor(shiftedTime / this.data.period);
+          this.setPoseOpacity(this.rest, 1 - progress);
+          this.setPoseOpacity(this.throwPose, progress);
+          this.el.object3D.position.y = this.baseY;
+          this.el.object3D.rotation.x = this.baseRotationX + THREE.MathUtils.degToRad(-this.data.lean * progress);
+          this.el.object3D.rotation.z = this.baseRotationZ + THREE.MathUtils.degToRad(2 * progress);
+        },
+        easeInOut: function (value) {
+          return value < 0.5 ? 4 * value * value * value : 1 - Math.pow(-2 * value + 2, 3) / 2;
+        },
+        canReleaseThrow: function () {
+          if (!this.ready || this.stopped) return false;
+          var throwPoseVisible = this.phase >= 0.28 && this.phase <= 0.46 && this.progress >= 0.42;
+          if (!throwPoseVisible || this.lastReleaseCycle === this.cycle) return false;
+          return true;
+        },
+        markThrowReleased: function () {
+          this.lastReleaseCycle = this.cycle;
+        },
+        stopAtRest: function () {
+          this.stopped = true;
+          this.progress = 0;
+          this.setPoseOpacity(this.rest, 1);
+          this.setPoseOpacity(this.throwPose, 0);
+          this.el.object3D.position.y = this.baseY;
+          this.el.object3D.rotation.x = this.baseRotationX;
+          this.el.object3D.rotation.z = this.baseRotationZ;
+        },
+        alignPoseFeet: function () {
+          this.alignPoseToFootPoint(this.rest);
+          this.alignPoseToFootPoint(this.throwPose);
+        },
+        placeGroupOnGround: function () {
+          var box = new THREE.Box3().setFromObject(this.el.object3D);
+          if (!isFinite(box.min.y)) return;
+          this.el.object3D.position.y += this.data.groundY - box.min.y;
+        },
+        alignPoseToFootPoint: function (pose) {
+          if (!pose || pose.dataset.feetAligned === "true") return;
+          var box = new THREE.Box3().setFromObject(pose.object3D);
+          if (!isFinite(box.min.y)) return;
+          var footCenter = new THREE.Vector3((box.min.x + box.max.x) / 2, box.min.y, (box.min.z + box.max.z) / 2);
+          var localFootCenter = this.el.object3D.worldToLocal(footCenter.clone());
+          pose.object3D.position.x -= localFootCenter.x;
+          pose.object3D.position.y -= localFootCenter.y;
+          pose.object3D.position.z -= localFootCenter.z;
+          pose.dataset.feetAligned = "true";
+        },
+        setPoseOpacity: function (pose, opacity) {
+          if (!pose) return;
+          pose.object3D.traverse(function (node) {
+            if (!node.isMesh || !node.material) return;
+            var materials = Array.isArray(node.material) ? node.material : [node.material];
+            materials.forEach(function (material, index) {
+              if (!material.userData.opacityClone) {
+                var cloned = material.clone();
+                cloned.userData.opacityClone = true;
+                if (Array.isArray(node.material)) node.material[index] = cloned;
+                else node.material = cloned;
+                material = cloned;
+              }
+              material.transparent = true;
+              material.opacity = opacity;
+              material.depthWrite = opacity > 0.98;
+              material.needsUpdate = true;
+            });
+          });
+        },
+        remove: function () {
+          if (this.rest) this.rest.removeEventListener("model-loaded", this.onModelLoaded);
+          if (this.throwPose) this.throwPose.removeEventListener("model-loaded", this.onModelLoaded);
+        },
+      });
+
+      AFRAME.registerComponent("fire-flicker", {
+        schema: { base: { default: 1.4 }, range: { default: 0.5 }, speed: { default: 0.007 } },
+        tick: function (time) {
+          var flicker = Math.sin(time * this.data.speed) * 0.55 + Math.sin(time * this.data.speed * 2.7) * 0.45;
+          this.el.setAttribute("intensity", this.data.base + this.data.range * Math.max(0, flicker));
         },
       });
 
@@ -1456,7 +1700,12 @@
 
         bindInput: function () {
           var canvas = this.el.canvas;
+          var self = this;
+          var handEvents = ["triggerdown", "gripdown", "abuttondown", "bbuttondown", "selectstart"];
+
           canvas.addEventListener("click", this.selectFromMouse.bind(this));
+          canvas.addEventListener("pointerdown", this.selectFromMouse.bind(this));
+
           document.addEventListener("keydown", function (event) {
             if (event.code === "Space" || event.code === "Enter") {
               if (practiceWaiting) {
@@ -1467,15 +1716,30 @@
                 goToPerformanceEnding();
                 return;
               }
-              this.selectFromCenter();
+              self.selectFromCenter();
             }
-          }.bind(this));
+          });
+
+          function onHandSelect(hand, event) {
+            if (practiceWaiting) {
+              beginPerformanceRound();
+              return;
+            }
+            if (performanceFinished) {
+              goToPerformanceEnding();
+              return;
+            }
+            self.selectFromHand(hand, event);
+          }
+
           [document.querySelector("#leftHand"), document.querySelector("#rightHand")].forEach(function (hand) {
             if (!hand) return;
-            hand.addEventListener("selectstart", function (event) {
-              this.selectFromHand(hand, event);
-            }.bind(this));
-          }.bind(this));
+            handEvents.forEach(function (eventName) {
+              hand.addEventListener(eventName, function (event) {
+                onHandSelect(hand, event);
+              });
+            });
+          });
         },
 
         selectFromMouse: function (event) {
@@ -1495,6 +1759,10 @@
 
         selectFromHand: function (handEl, event) {
           if (!this.canSelect()) return;
+          if (this.el.is("vr-mode")) {
+            this.selectFromCenter();
+            return;
+          }
           if (!handEl || !handEl.object3D) return;
           if (event && event.detail && event.detail.intersection) {
             var laneFromRay = this.findRhythmLaneFromIntersection(event.detail.intersection);
@@ -1564,6 +1832,10 @@
 
         activateTarget: function (target) {
           if (!target) return;
+          var isRhythmLane = target.dataset && target.dataset.laneIndex !== undefined;
+          if (hasLadle && target.id !== "ladle" && !isRhythmLane) {
+            animateToolStrike();
+          }
           if (target.id === "furnaceHotspot") prepareMoltenIron();
           if (target.components && target.components["material-choice"]) chooseMaterial(target);
           if (target.id === "bellowsHotspot") pullBellows();
@@ -1859,7 +2131,7 @@
             } else if (!moltenIronReady) {
               setStatus("点击炉子：开始加热点火，等待约 5 秒", "Click the furnace: heat and ignite, then wait about 5 seconds");
             } else if (hasLadle && !ladleLoaded) {
-              setStatus("点击炉火：把铁水装入左手铁碗", "Click the furnace to load molten iron into the left-hand bowl");
+              setStatus("点击炉火：铁水已就绪，前往工具站确认铁锹", "Molten iron is ready. Return to the tool station with your shovel");
             } else {
               setStatus("铁水已经流出，准备进入表演场", "Molten iron has flowed out. Prepare to enter the performance scene");
             }
@@ -1908,11 +2180,11 @@
           this.el.addEventListener("mouseenter", function () {
             this.setAttribute("scale", "1.08 1.08 1.08");
             if (hasLadle) {
-              setStatus("点击工具站：放回铁碗和拍板", "Click the tool station to return the bowl and paddle");
+              setStatus("点击工具站：放回右手铁锹", "Click the tool station to return the right-hand shovel");
             } else if (!moltenIronReady) {
               setStatus("请先完成材料入炉和加热点火，等铁水流出后再取工具", "Complete materials and heating first; pick up tools after molten iron flows");
             } else {
-              setStatus("点击工具站：把铁水装入左手铁碗，并拿起右手拍板", "Click the tool station: load molten iron into the left bowl and take the right paddle");
+              setStatus("点击工具站：拿起右手铁锹", "Click the tool station: take the right-hand shovel");
             }
           });
           this.el.addEventListener("mouseleave", function () {
@@ -1927,7 +2199,7 @@
             this.setAttribute("scale", hasLadle ? "1.24 1.24 1.24" : "1.08 1.08 1.08");
             if (hasLadle) triggerIronFlower();
             if (!hasLadle) {
-              setStatus("先拿起铁碗和拍板，再完成发炉、融铁、打铁花", "Pick up the bowl and paddle, then prepare, melt, and perform Iron Flower");
+              setStatus("先点击工具站，拿起右手铁锹", "Click the tool station first to take the right-hand shovel");
             }
           });
           this.el.addEventListener("click", function () {
@@ -2183,15 +2455,17 @@
 
         if (hasLadle) {
           fillLadleWithMoltenIron();
-          setStatus("铁水已装入左手铁碗，前往击打点", "Molten iron is in the left-hand bowl. Move to the strike point");
+          setStatus("铁水已就绪：右手铁锹准备打铁花", "Molten iron is ready. Right-hand shovel is set for Iron Flower");
           setTimeout(function () {
-            setSceneStep(3);
+            advanceToStrikeStepIfNeeded();
           }, 500);
         } else {
-          setStatus("铁水已流出：点击工具站，拿起铁碗和拍板", "Molten iron has flowed out: pick up the bowl and paddle at the tool station");
+          setStatus("铁水已流出：点击工具站，拿起右手铁锹", "Molten iron has flowed out: pick up the right-hand shovel at the tool station");
           setTimeout(function () {
-            setSceneStep(3);
-            setStatus("步骤 3 表演场：点击工具站，左手端铁碗、右手拿拍板", "Step 3 Performance Scene: click the tool station, bowl in left hand and paddle in right hand");
+            advanceToStrikeStepIfNeeded();
+            if (!isPerformanceWorkflow()) {
+              setStatus("步骤 3 表演场：点击工具站，右手拿起铁锹", "Step 3 Performance Scene: click the tool station and take the shovel in your right hand");
+            }
           }, 650);
         }
       }
@@ -2221,11 +2495,13 @@
         performanceFinished = false;
         rhythmActive = false;
         practiceWaiting = true;
+        performanceRoundStarted = false;
         rhythmStart = 0;
         rhythmLastSpawn = 0;
+        rhythmFallbackLane = 0;
         resetRhythmEntities();
         buildRhythmLanes(performanceConfig.lanes);
-        ensureRhythmPaddle();
+        stopPersonAtRest();
         updatePerformanceStartPrompt();
         hidePerformanceEndPrompt();
         updateRankPanel();
@@ -2239,8 +2515,8 @@
         var label = currentLanguage === "zh" ? "开始表演" : "Start Show";
         var detail =
           currentLanguage === "zh"
-            ? "3 个判定环 · 30 秒 · MARVELOUS +150 / EXCELLENT +100 / GOOD +60"
-            : "3 lanes · 30 sec · MARVELOUS +150 / EXCELLENT +100 / GOOD +60";
+            ? "2 个判定环 · 30 秒 · MARVELOUS +150 / EXCELLENT +100 / GOOD +60"
+            : "2 lanes · 30 sec · MARVELOUS +150 / EXCELLENT +100 / GOOD +60";
         var btn = document.querySelector("#practiceStartBtn");
         var fallback = document.querySelector("#practiceStartFallback");
         var hud = document.querySelector("#rhythmHud");
@@ -2278,14 +2554,16 @@
         if (!consumePracticeUiAction()) return;
         hidePerformanceStartPrompt();
         hidePerformanceEndPrompt();
+        performanceRoundStarted = true;
         rhythmStart = performance.now();
-        rhythmLastSpawn = 0;
+        rhythmLastSpawn = rhythmStart;
+        rhythmFallbackLane = 0;
         rhythmActive = true;
         rhythmEnded = false;
         performanceFinished = false;
         lastRhythmHitAt = 0;
         refreshPerformanceTitle();
-        ensureRhythmPaddle();
+        startPersonThrowLoops();
         setStatus(
           currentLanguage === "zh"
             ? "正式表演：30 秒内击中铁花，得分决定结局（900/1800 两档阈值）"
@@ -2363,13 +2641,40 @@
         if (fallback) fallback.style.display = "none";
       }
 
+      function promptLeaderboardOnPerformanceEnd() {
+        if (!window.IronFlowerLeaderboard || !window.IronFlowerLeaderboardUi) return;
+        var tier =
+          window.IronFlowerStory && window.IronFlowerStory.resolveEndingTier
+            ? window.IronFlowerStory.resolveEndingTier(rhythmScore)
+            : "";
+        var rank = getRankTier();
+        var source = storyMode ? "story" : "performance";
+        window.IronFlowerLeaderboard.load().then(function (board) {
+          if (!window.IronFlowerLeaderboard.qualifies(rhythmScore, board.entries)) return;
+          window.IronFlowerLeaderboard.setPending({
+            score: rhythmScore,
+            source: source,
+            endingTier: tier,
+            grade: rank.grade,
+          });
+          window.IronFlowerLeaderboardUi.open({
+            score: rhythmScore,
+            source: source,
+            endingTier: tier,
+            grade: rank.grade,
+          });
+        });
+      }
+
       function showPerformanceEndPrompt() {
         performanceFinished = true;
         rhythmNotes.slice().forEach(function (note) {
           if (note.el) note.el.remove();
         });
         rhythmNotes = [];
+        stopPersonAtRest();
         updatePerformanceEndPrompt();
+        promptLeaderboardOnPerformanceEnd();
       }
 
       function goToPerformanceEnding() {
@@ -2392,11 +2697,11 @@
             : "Tap End Show to view your ending"
           : practiceWaiting
           ? currentLanguage === "zh"
-            ? "点击「开始表演」后，用木拍击中三名助手抛来的铁水球"
-            : "Tap Start Show, then hit molten balls thrown by three assistants"
+            ? "点击「开始表演」后，用铁锹击中两名助手抛来的铁水球"
+            : "Tap Start Show, then hit molten balls thrown by two assistants"
           : currentLanguage === "zh"
-            ? "三名助手分站在三处，向对应轨道抛来烧红铁水"
-            : "Three assistants throw molten iron from three positions into matching lanes";
+            ? "两名助手分站在两侧，向对应轨道抛来烧红铁水"
+            : "Two assistants throw molten iron from both sides into matching lanes";
         title.setAttribute("canvas-label", "text: " + label + "|" + body + "; width: 4.8; height: 0.72");
       }
 
@@ -2422,18 +2727,40 @@
         if (notes) notes.innerHTML = "";
       }
 
+      function stopPersonAtRest() {
+        ["#personModelMirror", "#personModel1"].forEach(function (selector) {
+          var person = document.querySelector(selector);
+          var throwLoop = person && person.components && person.components["person-throw-loop"];
+          if (throwLoop) throwLoop.stopAtRest();
+        });
+      }
+
+      function startPersonThrowLoops() {
+        ["#personModelMirror", "#personModel1"].forEach(function (selector) {
+          var person = document.querySelector(selector);
+          var throwLoop = person && person.components && person.components["person-throw-loop"];
+          if (!throwLoop) return;
+          throwLoop.stopped = false;
+          throwLoop.phase = 0;
+          throwLoop.progress = 0;
+          throwLoop.lastReleaseCycle = -1;
+          throwLoop.resetBase();
+        });
+      }
+
       function buildRhythmLanes(count) {
         var lanes = document.querySelector("#rhythmLanes");
         if (!lanes) return;
 
-        var spacing = 0.62;
+        var spacing = rhythmMode === "performance" ? 0.82 : 0.62;
         var total = (count - 1) * spacing;
         for (var i = 0; i < count; i += 1) {
           var x = -total / 2 + i * spacing;
           var lane = document.createElement("a-entity");
           lane.setAttribute("position", x + " 1.85 0");
+          var laneGuide = rhythmMode === "performance" ? "" : '<a-cylinder radius="0.018" height="2.5" rotation="0 0 0" color="#ffd37a" material="transparent: true; opacity: 0.34"></a-cylinder>';
           lane.innerHTML =
-            '<a-cylinder radius="0.018" height="2.5" rotation="0 0 0" color="#ffd37a" material="transparent: true; opacity: 0.34"></a-cylinder>' +
+            laneGuide +
             '<a-sphere class="clickable rhythm-hit" rhythm-lane-hit="lane: ' + i + '" position="0 -1.05 0.04" radius="0.32" material="shader: flat; transparent: true; opacity: 0.14; depthWrite: false"></a-sphere>' +
             '<a-ring class="rhythm-judge-ring" data-lane-ring-index="' + i + '" position="0 -1.05 0.03" radius-inner="0.16" radius-outer="0.23" color="#ffbd42" material="transparent: true; opacity: 0.9; emissive: #ff8a00; emissiveIntensity: 0.65"></a-ring>' +
             '<a-sphere radius="0.018" position="0 -1.42 0.04" color="#ffe7b2" material="emissive: #ff8a00; emissiveIntensity: 0.55"></a-sphere>';
@@ -2445,32 +2772,20 @@
       function updateRhythmGame() {
         if (!rhythmActive) return;
         var now = performance.now();
-        var config = performanceConfig;
+        var config = rhythmMode === "practice" ? rhythmConfigs[rhythmLevel - 1] : performanceConfig;
         var elapsed = now - rhythmStart;
         var hud = document.querySelector("#rhythmHud");
 
-        if (now - rhythmLastSpawn > config.spawn) {
+        if (rhythmMode === "performance") {
+          spawnReadyPerformanceNotes(config, now);
+        } else if (now - rhythmLastSpawn > config.spawn) {
           rhythmLastSpawn = now;
           spawnRhythmNote(config);
         }
 
         rhythmNotes.slice().forEach(function (note) {
-          if (note.arc) {
-            note.t += config.speed / (rhythmThrower.fallSpan * 60);
-            var progress = Math.min(note.t, 1);
-            var pos = getRhythmArcPosition(note, progress);
-            note.y = pos.y;
-            note.el.setAttribute("position", pos.x + " " + pos.y + " " + pos.z);
-            if (note.t >= 1 || note.y < 0.48) {
-              note.el.remove();
-              rhythmNotes.splice(rhythmNotes.indexOf(note), 1);
-              registerRhythmMiss();
-            }
-            return;
-          }
-          note.y -= config.speed / 60;
-          note.el.setAttribute("position", note.x + " " + note.y + " 0.08");
-          if (note.y < 0.48) {
+          updateRhythmNotePosition(note, now, config);
+          if (isRhythmNoteMissed(note)) {
             note.el.remove();
             rhythmNotes.splice(rhythmNotes.indexOf(note), 1);
             registerRhythmMiss();
@@ -2479,125 +2794,233 @@
 
         if (hud) {
           var remaining = Math.max(0, Math.ceil((config.duration - elapsed) / 1000));
-          hud.setAttribute(
-            "value",
-            "Performance   Time " + remaining + "   Score " + rhythmScore + "   Combo " + rhythmCombo + "   Miss " + rhythmMisses
-          );
+          if (rhythmMode === "practice") {
+            hud.setAttribute("value", "Practice " + rhythmLevel + "/3   Time " + remaining + "   Miss " + rhythmMisses + "/3   Score " + rhythmScore);
+          } else {
+            hud.setAttribute(
+              "value",
+              "Performance   Time " + remaining + "   Score " + rhythmScore + "   Combo " + rhythmCombo + "   Miss " + rhythmMisses
+            );
+          }
+        }
+
+        if (rhythmMode === "practice" && rhythmMisses >= 3) {
+          restartPracticeLevel();
+          return;
         }
 
         if (elapsed >= config.duration && !rhythmEnded) {
           rhythmEnded = true;
           rhythmActive = false;
+          if (rhythmMode === "performance") stopPersonAtRest();
           syncRankHudForVr();
           updateAudienceReaction();
-          showPerformanceEndPrompt();
+          if (rhythmMode === "performance") showPerformanceEndPrompt();
         }
       }
 
-      function getRhythmArcPosition(note, t) {
-        var arc = note.arcHeight * 4 * t * (1 - t);
-        return {
-          x: note.sx + (note.tx - note.sx) * t,
-          y: note.sy + (note.ty - note.sy) * t + arc,
-          z: note.sz + (note.tz - note.sz) * t,
-        };
-      }
-
-      function getThrowerHandWorld(laneIndex) {
-        var thrower = document.querySelector('.molten-thrower[data-lane="' + laneIndex + '"]');
-        var hand = new THREE.Vector3(0, 1.5, -4.2);
-        if (!thrower) return hand;
-        var glow = thrower.querySelector(".thrower-glow");
-        if (glow) glow.object3D.getWorldPosition(hand);
-        else {
-          thrower.object3D.getWorldPosition(hand);
-          hand.y += 1.02;
-          hand.x += 0.34;
+      function spawnReadyPerformanceNotes(config, now) {
+        var hasReadyThrower = false;
+        var firstLane = rhythmFallbackLane % config.lanes;
+        var candidateLane = -1;
+        for (var index = 0; index < config.lanes; index += 1) {
+          var lane = (firstLane + index) % config.lanes;
+          var person = getPerformancePersonForLane(lane, config.lanes);
+          var throwLoop = person && person.components && person.components["person-throw-loop"];
+          if (throwLoop && throwLoop.ready && !throwLoop.stopped) hasReadyThrower = true;
+          if (throwLoop && throwLoop.canReleaseThrow()) {
+            candidateLane = lane;
+            break;
+          }
         }
-        return hand;
-      }
 
-      function playThrowerToss(laneIndex) {
-        var thrower = document.querySelector('.molten-thrower[data-lane="' + laneIndex + '"]');
-        if (!thrower) return;
-        var arm = thrower.querySelector(".thrower-arm");
-        var glow = thrower.querySelector(".thrower-glow");
-        if (glow) {
-          glow.setAttribute("visible", "true");
-          setTimeout(function () {
-            glow.setAttribute("visible", "false");
-          }, 220);
+        if (candidateLane >= 0 && canSpawnPerformanceNote(now)) {
+          var candidatePerson = getPerformancePersonForLane(candidateLane, config.lanes);
+          var candidateLoop = candidatePerson && candidatePerson.components && candidatePerson.components["person-throw-loop"];
+          if (candidateLoop) candidateLoop.markThrowReleased();
+          rhythmLastSpawn = now;
+          spawnRhythmNote(config, candidateLane);
+          rhythmFallbackLane = candidateLane + 1;
+          return;
         }
-        if (!arm) return;
-        arm.removeAttribute("animation__toss");
-        arm.removeAttribute("animation__toss_return");
-        arm.setAttribute("animation__toss", "property: rotation; from: 18 -72 8; to: -52 -72 8; dur: 260; easing: easeOutCubic");
-        setTimeout(function () {
-          arm.setAttribute("animation__toss_return", "property: rotation; to: 18 -72 8; dur: 380; easing: easeOutQuad");
-        }, 270);
+
+        if (!hasReadyThrower && now - rhythmLastSpawn > Math.max(config.spawn, performanceSpawnGap)) {
+          rhythmLastSpawn = now;
+          spawnRhythmNote(config, firstLane);
+          rhythmFallbackLane = firstLane + 1;
+        }
       }
 
-      function spawnRhythmNote(config) {
+      function canSpawnPerformanceNote(now) {
+        return now - rhythmLastSpawn >= performanceSpawnGap;
+      }
+
+      function choosePerformanceNoteDuration(now, baseDuration) {
+        var nextArrival = now + baseDuration * 0.82;
+        var nearestArrivalGap = rhythmNotes.reduce(function (nearest, note) {
+          if (!note.arrivalTime) return nearest;
+          return Math.min(nearest, Math.abs(note.arrivalTime - nextArrival));
+        }, Infinity);
+        var crowdingDelay = nearestArrivalGap < 180 ? 180 - nearestArrivalGap : 0;
+        return baseDuration + crowdingDelay + Math.random() * 180;
+      }
+
+      function updateRhythmNotePosition(note, now, config) {
+        if (note.curve) {
+          var progress = Math.min((now - note.birth) / note.duration, 1.2);
+          note.progress = progress;
+          var clamped = Math.min(progress, 1);
+          var pos = getThrowCurvePoint(note, clamped);
+          note.x = pos.x;
+          note.y = pos.y;
+          note.z = pos.z;
+          note.el.setAttribute("position", note.x + " " + note.y + " " + note.z);
+          return;
+        }
+        note.y -= config.speed / 60;
+        note.el.setAttribute("position", note.x + " " + note.y + " " + (note.z || 0.08));
+      }
+
+      function isRhythmNoteMissed(note) {
+        if (note.curve) return note.progress >= 1;
+        return note.y < 0.48;
+      }
+
+      function quadraticPoint(start, control, end, progress) {
+        var inverse = 1 - progress;
+        return new THREE.Vector3(
+          inverse * inverse * start.x + 2 * inverse * progress * control.x + progress * progress * end.x,
+          inverse * inverse * start.y + 2 * inverse * progress * control.y + progress * progress * end.y,
+          inverse * inverse * start.z + 2 * inverse * progress * control.z + progress * progress * end.z
+        );
+      }
+
+      function getThrowCurvePoint(note, progress) {
+        if (progress <= 0.82) {
+          return quadraticPoint(note.start, note.control, note.ringCenter, progress / 0.82);
+        }
+        return note.ringCenter.clone().lerp(note.end, (progress - 0.82) / 0.18);
+      }
+
+      function getPerformancePersonForLane(laneIndex, laneCount) {
+        if (laneCount > 1 && laneIndex === 0) return document.querySelector("#personModelMirror");
+        return document.querySelector("#personModel1");
+      }
+
+      function getRhythmRingCenter(laneIndex) {
+        var ring = document.querySelector('.rhythm-hit[data-lane-index="' + laneIndex + '"]');
+        var center = new THREE.Vector3(sceneStepX[currentSceneStep], 0.8, performanceRingZ);
+        if (ring) ring.object3D.getWorldPosition(center);
+        return center;
+      }
+
+      function getRhythmRingLocalCenter(laneIndex) {
+        var notesRoot = document.querySelector("#rhythmNotes");
+        var worldCenter = getRhythmRingCenter(laneIndex);
+        if (notesRoot) return notesRoot.object3D.worldToLocal(worldCenter.clone());
+        return new THREE.Vector3(0, 0.8, 0.03);
+      }
+
+      function getThrowStartLocalPosition(endLocal, laneIndex) {
+        var notesRoot = document.querySelector("#rhythmNotes");
+        var person = getPerformancePersonForLane(laneIndex, performanceConfig.lanes);
+        var pose = person && person.querySelector("#personPoseThrow");
+        var ringWorld = endLocal.clone();
+        if (notesRoot) notesRoot.object3D.localToWorld(ringWorld);
+        var startWorld = getSpoonLikeWorldPosition(pose, ringWorld, person);
+        if (notesRoot) return notesRoot.object3D.worldToLocal(startWorld);
+        return new THREE.Vector3(2.0, 1.6, -1.2);
+      }
+
+      function getSpoonLikeWorldPosition(pose, ringWorld, person) {
+        if (pose && pose.components && pose.components["gltf-model"]) {
+          var spoonBowlLocal = new THREE.Vector3(-0.62, 0.72, 0.03);
+          return pose.object3D.localToWorld(spoonBowlLocal);
+        }
+        var fallback = new THREE.Vector3((sceneStepX[currentSceneStep] || 0) + 2.4, 1.35, performanceActorZ);
+        if (person) {
+          person.object3D.getWorldPosition(fallback);
+          var direction = ringWorld.clone().sub(fallback);
+          direction.y = 0;
+          if (direction.lengthSq() > 0.001) direction.normalize();
+          fallback.addScaledVector(direction, 0.7);
+          fallback.y += 1.35;
+        }
+        return fallback;
+      }
+
+      function spawnRhythmNote(config, forcedLane) {
         var lanes = config.lanes;
-        var lane = Math.floor(Math.random() * lanes);
-        var spacing = 0.62;
+        var lane = typeof forcedLane === "number" ? forcedLane : Math.floor(Math.random() * lanes);
+        var spacing = rhythmMode === "performance" ? 0.82 : 0.62;
         var total = (lanes - 1) * spacing;
         var x = -total / 2 + lane * spacing;
         var note = document.createElement("a-entity");
         note.setAttribute("geometry", "primitive: sphere; radius: 0.075");
         note.setAttribute("material", "color: #fff4c1; emissive: #ff6a00; emissiveIntensity: 2.8; transparent: true; opacity: 1");
+        document.querySelector("#rhythmNotes").appendChild(note);
 
         if (rhythmMode === "performance") {
-          var hand = getThrowerHandWorld(lane);
-          var sx = hand.x + (Math.random() - 0.5) * 0.08;
-          var sy = hand.y + (Math.random() - 0.5) * 0.05;
-          var sz = hand.z + (Math.random() - 0.5) * 0.06;
-          var arcHeight = (rhythmThrowerArcHeights[lane] || rhythmThrower.arcHeight) + Math.random() * 0.32;
-          var start = getRhythmArcPosition(
-            { sx: sx, sy: sy, sz: sz, tx: x, ty: 0.35, tz: 0.1, arcHeight: arcHeight },
-            0
+          var ringCenter = getRhythmRingLocalCenter(lane);
+          var end = ringCenter.clone();
+          end.y -= 0.31;
+          var start = getThrowStartLocalPosition(end, lane);
+          var control = new THREE.Vector3(
+            (start.x + ringCenter.x) / 2,
+            Math.max(start.y, ringCenter.y) + 1.75,
+            (start.z + ringCenter.z) / 2
           );
+          var birth = performance.now();
+          var duration = choosePerformanceNoteDuration(birth, 1200);
           note.setAttribute("position", start.x + " " + start.y + " " + start.z);
-          document.querySelector("#rhythmNotes").appendChild(note);
-          playThrowerToss(lane);
           rhythmNotes.push({
             el: note,
             lane: lane,
-            x: x,
+            x: start.x,
             y: start.y,
-            arc: true,
-            t: 0,
-            sx: sx,
-            sy: sy,
-            sz: sz,
-            tx: x,
-            ty: 0.35,
-            tz: 0.1,
-            arcHeight: arcHeight,
+            z: start.z,
+            curve: true,
+            start: start,
+            control: control,
+            end: end,
+            ringCenter: ringCenter,
+            birth: birth,
+            duration: duration,
+            arrivalTime: birth + duration * 0.82,
           });
           return;
         }
 
         note.setAttribute("position", x + " 3.1 0.08");
-        document.querySelector("#rhythmNotes").appendChild(note);
-        rhythmNotes.push({ el: note, lane: lane, x: x, y: 3.1 });
+        rhythmNotes.push({ el: note, lane: lane, x: x, y: 3.1, z: 0.08 });
       }
 
       function hitRhythmLane(laneIndex) {
         if (!rhythmActive) return;
         if (!consumeRhythmHit()) return;
         var targetY = 0.8;
+        var noteRadius = 0.075;
+        var ringOuterRadius = 0.23;
         var best = null;
         rhythmNotes.forEach(function (note) {
           if (note.lane !== laneIndex) return;
-          var distance = Math.abs(note.y - targetY);
-          if (distance <= 0.34 && (!best || distance < best.distance)) {
+          var distance;
+          if (note.curve) {
+            var ringCenter = getRhythmRingLocalCenter(laneIndex);
+            distance = Math.sqrt(Math.pow(note.x - ringCenter.x, 2) + Math.pow(note.y - ringCenter.y, 2));
+            if (distance > ringOuterRadius + noteRadius) return;
+          } else {
+            distance = Math.abs(note.y - targetY);
+            if (distance > 0.34) return;
+          }
+          if (!best || distance < best.distance) {
             best = { note: note, distance: distance };
           }
         });
 
         if (!best) {
           animateRhythmLaneFeedback(laneIndex, false);
+          animateToolStrike();
           registerRhythmMiss();
           return;
         }
@@ -2606,18 +3029,19 @@
         var hitResult = window.IronFlowerStory
           ? window.IronFlowerStory.resolveHitScore(best.distance)
           : getHitFeedbackTier(best.distance);
-        animatePaddleStrike();
+        animateToolStrike();
         rhythmNotes.splice(rhythmNotes.indexOf(note), 1);
         note.el.remove();
         rhythmCombo += 1;
         rhythmBestCombo = Math.max(rhythmBestCombo, rhythmCombo);
         rhythmScore += hitResult.points;
         animateRhythmLaneFeedback(laneIndex, true, hitResult.tier === "marvelous" ? 1 : hitResult.tier === "excellent" ? 0.5 : 0);
+        var flashCenter = note.curve ? getRhythmRingCenter(laneIndex) : new THREE.Vector3(sceneStepX[currentSceneStep], 1.15, performanceRingZ);
         createFlash(
           document.querySelector("#fireworks"),
-          sceneStepX[currentSceneStep],
-          1.15,
-          -3.4,
+          flashCenter.x,
+          flashCenter.y,
+          flashCenter.z,
           hitResult.tier === "marvelous" ? 2.2 : hitResult.tier === "excellent" ? 1.6 : 1.2,
           hitResult.tier === "marvelous" ? 4 : hitResult.tier === "excellent" ? 3.2 : 2.6,
           hitResult.tier === "marvelous" ? 180 : 140
@@ -2820,38 +3244,36 @@
         }
       }
 
-      function ensureRhythmPaddle() {
-        if (!document.querySelector("#heldPaddle")) {
-          var paddle = document.createElement("a-entity");
-          paddle.setAttribute("id", "heldPaddle");
-          paddle.innerHTML =
-            '<a-box position="-0.08 0 0" width="0.44" height="0.06" depth="0.22" color="#a86f32" material="roughness: 0.92"></a-box>' +
-            '<a-box position="0.14 0 0.01" width="0.28" height="0.045" depth="0.18" color="#c4873f" material="roughness: 0.88"></a-box>' +
-            '<a-cylinder position="0.34 0 0" radius="0.022" height="0.62" rotation="0 0 90" color="#5c2a11" material="roughness: 0.85"></a-cylinder>';
-          document.querySelector("#fireworks").appendChild(paddle);
-        }
-        movePaddleToHand();
+      function addHeldShovel() {
+        if (document.querySelector("#heldShovel")) return;
+        var shovel = document.createElement("a-entity");
+        shovel.setAttribute("id", "heldShovel");
+        shovel.setAttribute("gltf-model", "#shovelAsset");
+        shovel.setAttribute("shadow", "cast: true; receive: true");
+        document.querySelector("#fireworks").appendChild(shovel);
       }
 
-      function movePaddleToHand() {
-        var paddle = document.querySelector("#heldPaddle");
+      function moveShovelToHand() {
+        if (!hasLadle) return;
+        addHeldShovel();
+        var shovel = document.querySelector("#heldShovel");
         var rightAnchor = document.querySelector("#handHeldAnchor");
         var cameraAnchor = document.querySelector("#heldAnchor");
         var scene = document.querySelector("a-scene");
         var inVr = scene && scene.is("vr-mode");
-        if (!paddle) return;
+        if (!shovel) return;
         if (inVr && rightAnchor) {
-          rightAnchor.appendChild(paddle);
-          paddle.setAttribute("position", "0 0 -0.03");
-          paddle.setAttribute("rotation", "0 0 -8");
-          paddle.setAttribute("scale", "0.72 0.72 0.72");
+          rightAnchor.appendChild(shovel);
+          shovel.setAttribute("position", "0 0.02 -0.06");
+          shovel.setAttribute("rotation", "0 90 0");
+          shovel.setAttribute("scale", "0.5 0.5 0.5");
           return;
         }
         if (cameraAnchor) {
-          cameraAnchor.appendChild(paddle);
-          paddle.setAttribute("position", "0.34 -0.03 -0.02");
-          paddle.setAttribute("rotation", "0 0 -18");
-          paddle.setAttribute("scale", "0.65 0.65 0.65");
+          cameraAnchor.appendChild(shovel);
+          shovel.setAttribute("position", "0.34 -0.03 -0.02");
+          shovel.setAttribute("rotation", "0 90 0");
+          shovel.setAttribute("scale", "0.5 0.5 0.5");
         }
       }
 
@@ -2879,18 +3301,19 @@
           toolStation.classList.add("clickable");
         }, 250);
 
-        addLowerStick();
-        fillLadleWithMoltenIron();
-        moveLadleToBestAnchor();
-        setSceneStep(3);
-        setStatus("右手拍板已就位：瞄准判定环开始打铁花", "Wooden paddle ready in your right hand. Aim at the judgment rings");
+        addHeldShovel();
+        ladleLoaded = true;
+        moveShovelToHand();
+        advanceToStrikeStepIfNeeded();
+        animateToolStrike();
+        setStatus("右手铁锹已就位：瞄准判定环开始打铁花", "Right-hand shovel ready. Aim at the judgment rings");
       }
 
       function returnToolsToStation() {
         var toolStation = document.querySelector("#ladle");
-        var paddle = document.querySelector("#heldPaddle");
+        var shovel = document.querySelector("#heldShovel");
 
-        if (paddle) paddle.remove();
+        if (shovel) shovel.remove();
 
         hasLadle = false;
         ladleLoaded = false;
@@ -2901,31 +3324,31 @@
         toolStation.setAttribute("scale", "1 1 1");
 
         if (moltenIronReady) {
-          setSceneStep(3);
-          setStatus("工具已放回：可再次点击工具站装入铁水并拿起拍板", "Tools returned: click the tool station again to load molten iron and take the paddle");
+          advanceToStrikeStepIfNeeded();
+          setStatus("铁锹已放回：可再次点击工具站拿起右手铁锹", "Shovel returned: click the tool station again to take the right-hand shovel");
         } else {
           setStatus("工具已放回：按三步流程继续执行", "Tools returned: continue following the three-step flow");
         }
       }
 
       function moveLadleToBestAnchor() {
-        movePaddleToHand();
+        moveShovelToHand();
       }
 
       function fillLadleWithMoltenIron() {
         if (ladleLoaded) return;
         ladleLoaded = true;
-        ensureRhythmPaddle();
+        addHeldShovel();
       }
 
       function addLowerStick() {
-        ensureRhythmPaddle();
+        addHeldShovel();
       }
 
       function triggerIronFlower() {
         var now = performance.now();
         if (!hasLadle) {
-          setStatus("请先点击工具站，拿起右手拍板", "Click the tool station first to take the paddle");
+          setStatus("请先点击工具站，拿起右手铁锹", "Click the tool station first to take the right-hand shovel");
           return;
         }
 
@@ -2935,16 +3358,15 @@
         }
 
         if (!moltenIronReady || !ladleLoaded) {
-          setStatus("请先完成融铁，并在工具站取拍板", "Melt the iron first, then take the paddle at the tool station");
+          setStatus("请先完成融铁，并在工具站取铁锹", "Melt the iron first, then take the shovel at the tool station");
           return;
         }
 
         if (now - lastBurst < 900) return;
         lastBurst = now;
         pourMoltenIronFromBowl();
-        animatePaddleStrike();
         launchIronFlower(7.2, 1.45, -4.25);
-        setStatus("打铁花：铁水泼出，右手拍板拍开，铁花绽放", "Iron Flower: molten iron pours out, the paddle slaps it open, sparks bloom");
+        setStatus("打铁花：铁水泼出，铁锹拍开，铁花绽放", "Iron Flower: molten iron pours out, the shovel strikes it open, sparks bloom");
       }
 
       function pourMoltenIronFromBowl() {
@@ -2973,18 +3395,35 @@
         }
       }
 
-      function animatePaddleStrike() {
-        var paddle = document.querySelector("#heldPaddle");
-        if (!paddle) return;
+      function animateToolStrike() {
+        var shovel = document.querySelector("#heldShovel");
+        if (!shovel) return;
         var scene = document.querySelector("a-scene");
         var inVr = scene && scene.is("vr-mode");
-        var rest = inVr ? "0 0 -8" : "0 0 -18";
-        paddle.removeAttribute("animation__strike_up");
-        paddle.removeAttribute("animation__strike_return");
-        paddle.setAttribute("animation__strike_up", "property: rotation; from: -78 12 -8; to: 24 -8 -8; dur: 110; easing: easeOutCubic");
+        var shovelRest = "0 90 0";
+        shovel.removeAttribute("animation__strike_up");
+        shovel.removeAttribute("animation__strike_return");
+        shovel.setAttribute("animation__strike_up", "property: rotation; from: -78 90 -8; to: 24 90 -8; dur: 110; easing: easeOutCubic");
         setTimeout(function () {
-          paddle.setAttribute("animation__strike_return", "property: rotation; to: " + rest + "; dur: 200; easing: easeOutQuad");
+          shovel.setAttribute("animation__strike_return", "property: rotation; to: " + shovelRest + "; dur: 200; easing: easeOutQuad");
         }, 115);
+
+        var handAnchor = inVr ? document.querySelector("#handHeldAnchor") : document.querySelector("#heldAnchor");
+        if (handAnchor) {
+          var handRest = inVr ? "-18 0 -10" : "0 0 -18";
+          var swingFrom = inVr ? "-62 0 -10" : "-62 0 -18";
+          var swingTo = inVr ? "38 0 -10" : "38 0 -18";
+          handAnchor.removeAttribute("animation__strike_up");
+          handAnchor.removeAttribute("animation__strike_return");
+          handAnchor.setAttribute("animation__strike_up", "property: rotation; from: " + swingFrom + "; to: " + swingTo + "; dur: 110; easing: easeOutCubic");
+          setTimeout(function () {
+            handAnchor.setAttribute("animation__strike_return", "property: rotation; to: " + handRest + "; dur: 200; easing: easeOutQuad");
+          }, 115);
+        }
+      }
+
+      function animatePaddleStrike() {
+        animateToolStrike();
       }
 
       function launchIronFlower(x, y, z) {
@@ -3250,30 +3689,24 @@
         scene.setAttribute("manual-interaction", "");
         scene.setAttribute("heating-progress-loop", "");
         scene.addEventListener("enter-vr", function () {
-          window.sessionStorage.setItem("ironflower-prefer-vr", "1");
           syncRankHudForVr(true);
-          if (rhythmActive || practiceWaiting) {
-            movePaddleToHand();
-            setStatus("已进入 VR：右手持木拍，点击判定环表演", "VR mode active: wooden paddle in right hand, hit rings to perform");
+          if (hasLadle) {
+            moveShovelToHand();
+            setStatus("已进入 VR：右手持铁锹，点击判定环表演", "VR mode active: shovel in right hand, hit rings to perform");
+          } else if (rhythmActive || practiceWaiting) {
+            setStatus("已进入 VR：点击工具站拿起铁锹，再点击判定环表演", "VR mode active: pick up the shovel, then hit the rings");
           } else {
             setStatus("已进入 VR：转头可看四周", "VR mode active: turn your head to look around");
           }
-          if (rhythmActive || practiceWaiting) setTimeout(movePaddleToHand, 120);
+          if (hasLadle) setTimeout(moveShovelToHand, 120);
         });
         scene.addEventListener("exit-vr", function () {
           syncRankHudForVr(false);
           setStatus("已退出 VR：电脑可用鼠标环顾场景", "Exited VR: on desktop, use the mouse to look around");
-          if (rhythmActive || practiceWaiting) movePaddleToHand();
+          if (hasLadle) moveShovelToHand();
         });
         scene.addEventListener("loaded", function () {
-          var preferVr =
-            pageQuery.get("vr") === "1" ||
-            window.sessionStorage.getItem("ironflower-prefer-vr") === "1";
-          if (preferVr) {
-            setTimeout(function () {
-              scene.enterVR().catch(function () {});
-            }, 420);
-          }
+          if (window.IronFlowerEntry) window.IronFlowerEntry.tryAutoEnterVr(scene);
         });
         document.querySelector("#furnaceHotspot").setAttribute("furnace-step", "");
         document.querySelector("#bellowsHotspot").setAttribute("bellows-step", "");

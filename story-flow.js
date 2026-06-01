@@ -1,5 +1,5 @@
 (function (global) {
-  var STORY_FLOW_VERSION = "20260531-a15";
+  var STORY_FLOW_VERSION = "20260601-prep";
   var CG_BASE = "./assets/story/";
 
   var STEP_ALIASES = {
@@ -28,10 +28,14 @@
     basic: "ending-a3-1",
   };
 
+  function encodeStoryAssetUrl(imageName) {
+    return CG_BASE + encodeURIComponent(imageName);
+  }
+
   function cg(imageName, next, opts) {
     opts = opts || {};
     return {
-      image: CG_BASE + imageName,
+      image: encodeStoryAssetUrl(imageName),
       next: next,
       buttonZh: opts.buttonZh || "点击继续",
       buttonEn: opts.buttonEn || "Continue",
@@ -117,22 +121,22 @@
     buildSequence(
       ["bridge-a3-1", "bridge-a3-2", "bridge-a3-3", "bridge-a3-4", "bridge-a3-5"],
       ["转场A3-1.png", "转场A3-2.png", "转场A3-3.png", "转场A3-4.png", "转场A3-5.png"],
-      "scene:scene-performance.html"
+      "scene:scene-prepare-performance.html"
     )
   );
 
   STEPS["ending-a1-1"] = cg("结局A1-1-1.png", "ending-a1-2");
-  STEPS["ending-a1-2"] = cg("结局A1-1.png", "scene:iron.html", {
+  STEPS["ending-a1-2"] = cg("结局A1-1.png", "scene:home", {
     buttonZh: "返回首页",
     buttonEn: "Back to Home",
   });
   STEPS["ending-a2-1"] = cg("结局A2-1-1.png", "ending-a2-2");
-  STEPS["ending-a2-2"] = cg("结局A2-1.png", "scene:iron.html", {
+  STEPS["ending-a2-2"] = cg("结局A2-1.png", "scene:home", {
     buttonZh: "返回首页",
     buttonEn: "Back to Home",
   });
   STEPS["ending-a3-1"] = cg("结局A3-1-1.png", "ending-a3-2");
-  STEPS["ending-a3-2"] = cg("结局A3-1.png", "scene:iron.html", {
+  STEPS["ending-a3-2"] = cg("结局A3-1.png", "scene:home", {
     buttonZh: "返回首页",
     buttonEn: "Back to Home",
   });
@@ -141,13 +145,23 @@
     return new URLSearchParams(window.location.search).get("story") === "1";
   }
 
+  function homeHref() {
+    if (global.IronFlowerEntry) return global.IronFlowerEntry.getHomeHref();
+    return "./iron-web.html";
+  }
+
   function prefersVrSession() {
+    if (global.IronFlowerEntry) return global.IronFlowerEntry.prefersVrSession();
     if (window.sessionStorage.getItem("ironflower-prefer-vr") === "1") return true;
     var scene = document.querySelector("a-scene");
     return !!(scene && scene.is && scene.is("vr-mode"));
   }
 
   function appendVrFlag(params) {
+    if (global.IronFlowerEntry) {
+      global.IronFlowerEntry.appendVrFlag(params);
+      return;
+    }
     if (prefersVrSession()) params.set("vr", "1");
   }
 
@@ -277,8 +291,8 @@
         window.location.href = sceneUrl(file, extraObj);
         return;
       }
-      if (target === "iron.html") {
-        window.location.href = "./iron.html";
+      if (target === "home" || target === "iron.html" || target === "iron-web.html" || target === "iron-vr.html") {
+        window.location.href = homeHref();
         return;
       }
       window.location.href = sceneUrl(target);

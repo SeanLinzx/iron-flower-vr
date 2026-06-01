@@ -5,9 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>故事篇章｜铜官窑打铁花 VR 体验</title>
     <link rel="stylesheet" href="./css/home-nav.css" />
+    <script src="./js/app-entry.js?v=20260601-entry"></script>
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-    <script src="./story-flow.js?v=20260531-a15"></script>
-    <script src="./js/vr-ui.js"></script>
+    <script src="./js/pico-thumbstick-move.js?v=20260601-xyz"></script>
+    <script src="./js/desktop-fly-controls.js?v=20260601-web"></script>
+    <script src="./story-flow.js?v=20260601-cg-url"></script>
+    <script src="./js/leaderboard.js?v=20260601-lb"></script>
+    <script src="./js/leaderboard-ui.js?v=20260601-lb-ui"></script>
+    <link rel="stylesheet" href="./css/leaderboard.css" />
+    <script src="./js/vr-ui.js?v=20260601-story-vr-cg"></script>
     <style>
       html,
       body {
@@ -242,7 +248,28 @@
       }
 
       body.vr-active .vr-gaze-dot {
-        opacity: 0.85;
+        opacity: 0;
+      }
+
+      body.vr-active .story-vr-mouse-hint {
+        opacity: 1;
+      }
+
+      .story-vr-mouse-hint {
+        position: fixed;
+        left: 50%;
+        bottom: 22px;
+        transform: translateX(-50%);
+        padding: 8px 16px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.52);
+        border: 1px solid rgba(255, 189, 66, 0.28);
+        color: rgba(255, 240, 205, 0.9);
+        font-size: 13px;
+        pointer-events: none;
+        z-index: 30;
+        opacity: 0;
+        transition: opacity 220ms ease;
       }
     </style>
   </head>
@@ -263,6 +290,7 @@
     </div>
 
     <div class="vr-gaze-dot" aria-hidden="true"></div>
+    <div id="vrMouseHint" class="story-vr-mouse-hint" aria-hidden="true">射线对准 CG 画面或按钮，按扳机继续</div>
 
     <a-scene
       id="storyScene"
@@ -271,7 +299,7 @@
       xr-mode-ui="enabled: true"
       device-orientation-permission-ui="enabled: true"
       loading-screen="enabled: true; backgroundColor: #000000"
-      vr-ui-interaction="preferGaze: true"
+      story-vr-advance="debounceMs: 320"
     >
       <a-assets timeout="120000"></a-assets>
       <a-sky color="#000000"></a-sky>
@@ -280,36 +308,53 @@
       <a-entity id="rig" position="0 1.6 0">
         <a-camera
           id="storyCamera"
-          look-controls="enabled: false"
+          look-controls="enabled: true; magicWindowTrackingEnabled: true; pointerLockEnabled: false; mouseEnabled: true"
           wasd-controls="enabled: false"
         >
-          <a-entity id="storyFrame" position="0 0.02 -1.72">
-            <a-plane
-              id="storyPanel"
-              story-texture-panel="src: ; width: 3.35; fadeIn: true"
-              position="0 0 0"
-              material="shader: flat"
-            ></a-plane>
-            <a-entity
-              id="continueBtn"
-              class="clickable"
-              position="0 -1.02 0.06"
-              story-continue-btn="next: ; label: 继续"
-            ></a-entity>
-          </a-entity>
+          <a-cursor
+            id="storyCursor"
+            raycaster="objects: #storyFrame .clickable; far: 12"
+            cursor="fuse: false"
+            visible="false"
+            material="color: #ffd37a; shader: flat; opacity: 0.85"
+            geometry="primitive: ring; radiusInner: 0.012; radiusOuter: 0.019"
+          ></a-cursor>
         </a-camera>
 
         <a-entity
           id="leftHand"
           laser-controls="hand: left"
-          raycaster="enabled: false"
-          line="visible: false"
+          raycaster="objects: #storyFrame .clickable; far: 12; interval: 0"
+          cursor="rayOrigin: entity; fuse: false"
+          line="color: #2bd4ff; opacity: 0.55"
         ></a-entity>
         <a-entity
           id="rightHand"
           laser-controls="hand: right"
-          raycaster="enabled: false"
-          line="visible: false"
+          raycaster="objects: #storyFrame .clickable; far: 12; interval: 0"
+          cursor="rayOrigin: entity; fuse: false"
+          line="color: #ffb13d; opacity: 0.85"
+        ></a-entity>
+      </a-entity>
+
+      <a-entity
+        id="storyFrame"
+        visible="false"
+        vr-panel-face-user="offsetY: 0; offsetZ: -3.15; follow: false"
+        position="0 1.6 -3.15"
+      >
+        <a-plane
+          id="storyPanel"
+          class="clickable"
+          story-texture-panel="src: ; width: 3.05; fadeIn: true"
+          story-tap-zone
+          position="0 0 0"
+        ></a-plane>
+        <a-entity
+          id="continueBtn"
+          class="clickable"
+          position="0 -1.02 0.06"
+          story-continue-btn="next: ; label: 继续"
         ></a-entity>
       </a-entity>
     </a-scene>
@@ -328,7 +373,7 @@
       }
 
       function isFinishStep(step) {
-        return !!(step && step.next && step.next.indexOf("scene:iron.html") === 0);
+        return !!(step && step.next && (step.next.indexOf("scene:home") === 0 || step.next.indexOf("scene:iron.html") === 0));
       }
 
       function advanceStory() {
@@ -349,11 +394,18 @@
         if (!currentStep) return;
         var button = currentLanguage === "zh" ? currentStep.buttonZh : currentStep.buttonEn;
         var hint = currentLanguage === "zh" ? "点击继续" : "Click to continue";
+        var vrHint = document.getElementById("vrMouseHint");
         document.getElementById("continueBtn").setAttribute("story-continue-btn", {
           next: currentStep.next,
           label: button,
         });
         document.getElementById("tapHintText").textContent = hint;
+        if (vrHint) {
+          vrHint.textContent =
+            currentLanguage === "zh"
+              ? "射线对准 CG 画面或按钮，按扳机继续"
+              : "Aim at the CG screen or button, then pull trigger";
+        }
         document.getElementById("stageContinueBtn").textContent = button;
         document.documentElement.lang = currentLanguage === "zh" ? "zh-CN" : "en";
         updateUiMode();
@@ -387,6 +439,68 @@
         preloadImage.src = nextStep.image;
       }
 
+      function isVrActive() {
+        return document.body.classList.contains("vr-active");
+      }
+
+      function ensureStoryFrameVisible() {
+        if (!isVrActive()) return;
+        var storyFrame = document.querySelector("#storyFrame");
+        var scene = document.querySelector("#storyScene");
+        if (storyFrame) {
+          storyFrame.setAttribute("visible", "true");
+          storyFrame.object3D.visible = true;
+          if (storyFrame.components && storyFrame.components["vr-panel-face-user"]) {
+            storyFrame.components["vr-panel-face-user"].syncPanel();
+          }
+        }
+        if (scene) {
+          window.setTimeout(function () {
+            var advance = scene.components && scene.components["story-vr-advance"];
+            if (advance && advance.refreshRaycasters) advance.refreshRaycasters();
+          }, 80);
+        }
+      }
+
+      function markStoryReady(onReady, ok) {
+        document.body.classList.add("is-ready");
+        ensureStoryFrameVisible();
+        if (ok && pageQuery.get("score") && window.IronFlowerLeaderboardUi) {
+          window.setTimeout(function () {
+            window.IronFlowerLeaderboardUi.tryOpenPending();
+          }, 480);
+        }
+        if (onReady) onReady(!!ok);
+      }
+
+      function applyStoryPanelImage(panel, image, onVisible) {
+        var panelComp = panel.components && panel.components["story-texture-panel"];
+        var done = false;
+        function finish() {
+          if (done) return;
+          done = true;
+          panel.removeEventListener("story-panel-visible", finish);
+          if (onVisible) onVisible();
+        }
+
+        panel.addEventListener("story-panel-visible", finish);
+        window.setTimeout(finish, isVrActive() ? 120 : 620);
+
+        if (panelComp) {
+          panelComp.data.src = currentStep.image;
+          panelComp.data.width = 3.05;
+          panelComp.data.fadeIn = !isVrActive();
+          panelComp.applyLoadedImage(image, currentStep.image);
+        } else {
+          panel.setAttribute("story-texture-panel", {
+            src: currentStep.image,
+            width: 3.05,
+            fadeIn: !isVrActive(),
+          });
+          finish();
+        }
+      }
+
       function renderStep(stepId, score, onReady) {
         currentStepId = stepId;
         currentStep = window.IronFlowerStory.getStep(stepId, score, currentLanguage);
@@ -396,7 +510,9 @@
         }
 
         syncStepUrl(stepId);
-        document.body.classList.remove("is-ready");
+        if (!isVrActive()) {
+          document.body.classList.remove("is-ready");
+        }
 
         var stageImage = document.getElementById("stageImage");
         stageImage.alt =
@@ -407,24 +523,24 @@
 
         loader.onload = function () {
           stageImage.src = currentStep.image;
-          panel.setAttribute("story-texture-panel", {
-            src: currentStep.image,
-            width: 3.35,
-            fadeIn: true,
-          });
-          applyLanguage();
-          preloadNextStep();
-          window.requestAnimationFrame(function () {
-            document.body.classList.add("is-ready");
-            if (onReady) onReady(true);
+          applyStoryPanelImage(panel, loader, function () {
+            applyLanguage();
+            preloadNextStep();
+            window.requestAnimationFrame(function () {
+              markStoryReady(onReady, true);
+            });
           });
         };
 
         loader.onerror = function () {
           stageImage.src = currentStep.image;
+          panel.setAttribute("story-texture-panel", {
+            src: currentStep.image,
+            width: 3.05,
+            fadeIn: !isVrActive(),
+          });
           applyLanguage();
-          document.body.classList.add("is-ready");
-          if (onReady) onReady(true);
+          markStoryReady(onReady, true);
         };
 
         loader.src = currentStep.image;
@@ -433,18 +549,54 @@
       function navigateWithFade(next) {
         if (!next || isNavigating) return;
         isNavigating = true;
+        var inVr = isVrActive();
+
+        if (isSceneNext(next)) {
+          document.body.classList.add("is-leaving");
+          window.setTimeout(function () {
+            window.IronFlowerStory.navigateNext(next);
+          }, inVr ? 160 : 260);
+          return;
+        }
+
+        var nextStep = window.IronFlowerStory.getStep(next, pageQuery.get("score"), currentLanguage);
+        if (!nextStep) {
+          isNavigating = false;
+          return;
+        }
+
         document.body.classList.add("is-leaving");
 
-        window.setTimeout(function () {
-          if (isSceneNext(next)) {
-            window.IronFlowerStory.navigateNext(next);
-            return;
-          }
+        var loader = new Image();
+        loader.onload = function () {
+          window.setTimeout(function () {
+            currentStepId = next;
+            currentStep = nextStep;
+            syncStepUrl(next);
+            if (!inVr) document.body.classList.remove("is-ready");
+
+            var stageImage = document.getElementById("stageImage");
+            stageImage.src = nextStep.image;
+            stageImage.alt =
+              currentLanguage === "zh" ? nextStep.captionZh || "故事 CG" : nextStep.captionEn || "Story CG";
+
+            var panel = document.querySelector("#storyPanel");
+            applyStoryPanelImage(panel, loader, function () {
+              applyLanguage();
+              preloadNextStep();
+              document.body.classList.remove("is-leaving");
+              isNavigating = false;
+              markStoryReady(null, true);
+            });
+          }, inVr ? 80 : 260);
+        };
+        loader.onerror = function () {
           renderStep(next, pageQuery.get("score"), function () {
             document.body.classList.remove("is-leaving");
             isNavigating = false;
           });
-        }, 260);
+        };
+        loader.src = nextStep.image;
       }
 
       function bindContinueNavigation() {
@@ -474,34 +626,6 @@
           }
         });
 
-        bindGamepadAdvance();
-      }
-
-      function bindGamepadAdvance() {
-        var pressed = false;
-        function pollGamepad() {
-          if (!document.body.classList.contains("is-ready") || isNavigating) {
-            window.requestAnimationFrame(pollGamepad);
-            return;
-          }
-          var pads = navigator.getGamepads ? navigator.getGamepads() : [];
-          var active = false;
-          for (var i = 0; i < pads.length; i++) {
-            var pad = pads[i];
-            if (!pad) continue;
-            if (pad.buttons[0] && pad.buttons[0].pressed) {
-              active = true;
-              break;
-            }
-          }
-          if (active && !pressed) {
-            if (isFinishStep(currentStep)) finishStory();
-            else advanceStory();
-          }
-          pressed = active;
-          window.requestAnimationFrame(pollGamepad);
-        }
-        window.requestAnimationFrame(pollGamepad);
       }
 
       function tryEnterVr(scene) {
@@ -522,13 +646,13 @@
         document.getElementById("stageContinueBtn").textContent = "返回首页";
         document.getElementById("stageContinueBtn").onclick = function (event) {
           event.stopPropagation();
-          window.location.href = "./iron.html";
+          window.location.href = window.IronFlowerEntry ? window.IronFlowerEntry.getHomeHref() : "./iron-web.html";
         };
       }
 
       function bootStoryPage() {
         if (pageQuery.get("story") !== "1") {
-          window.location.href = "./iron.html";
+          window.location.href = window.IronFlowerEntry ? window.IronFlowerEntry.getHomeHref() : "./iron-web.html";
           return;
         }
 
@@ -556,7 +680,7 @@
         var scene = document.querySelector("#storyScene");
         var preferVr =
           pageQuery.get("vr") === "1" ||
-          window.sessionStorage.getItem("ironflower-prefer-vr") === "1";
+          (window.IronFlowerEntry && window.IronFlowerEntry.prefersVrSession());
         var enterVrBtn = document.getElementById("enterVrBtn");
 
         enterVrBtn.addEventListener("click", function (event) {
@@ -565,7 +689,14 @@
         });
 
         scene.addEventListener("loaded", function () {
-          if (preferVr) {
+          var rig = document.querySelector("#rig");
+          if (rig) {
+            rig.setAttribute("pico-thumbstick-move", "speed: 1.8; turnSpeed: 90; verticalSpeed: 1.2");
+            rig.setAttribute("desktop-fly-controls", "speed: 2.4; verticalSpeed: 1.8");
+          }
+          if (preferVr && window.IronFlowerEntry) {
+            window.IronFlowerEntry.tryAutoEnterVr(scene, { delay: 360 });
+          } else if (preferVr) {
             window.setTimeout(function () {
               tryEnterVr(scene);
             }, 360);
@@ -574,13 +705,30 @@
 
         scene.addEventListener("enter-vr", function () {
           document.body.classList.add("vr-active");
-          window.sessionStorage.setItem("ironflower-prefer-vr", "1");
           enterVrBtn.classList.add("is-hidden");
+          var cursor = document.querySelector("#storyCursor");
+          if (cursor) cursor.setAttribute("visible", "true");
+          ensureStoryFrameVisible();
+          var panel = document.querySelector("#storyPanel");
+          var panelComp = panel && panel.components && panel.components["story-texture-panel"];
+          if (panelComp) {
+            panelComp.data.fadeIn = false;
+            panelComp.setPanelOpacity(1);
+          }
+          window.setTimeout(function () {
+            ensureStoryFrameVisible();
+            var advance = scene.components && scene.components["story-vr-advance"];
+            if (advance && advance.refreshRaycasters) advance.refreshRaycasters();
+          }, 240);
         });
 
         scene.addEventListener("exit-vr", function () {
           document.body.classList.remove("vr-active");
           enterVrBtn.classList.remove("is-hidden");
+          var cursor = document.querySelector("#storyCursor");
+          if (cursor) cursor.setAttribute("visible", "false");
+          var storyFrame = document.querySelector("#storyFrame");
+          if (storyFrame) storyFrame.setAttribute("visible", "false");
         });
       }
 

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>得分排行榜｜铜官窑打铁花 VR</title>
+    <link rel="stylesheet" href="./css/leaderboard.css" />
+    <link rel="stylesheet" href="./css/home-nav.css" />
+    <script src="./js/app-entry.js?v=20260601-entry"></script>
+    <script src="./story-flow.js?v=20260601-cg-url"></script>
+    <script src="./js/leaderboard.js?v=20260601-lb"></script>
+    <script src="./js/leaderboard-ui.js?v=20260601-lb-ui"></script>
+  </head>
+  <body class="leaderboard-page">
+    <header>
+      <a class="back-link" id="homeNavLink" href="./iron-web.html">← 返回首页</a>
+      <h1>打铁花得分排行榜</h1>
+      <p>故事模式与表演场景的最终表演得分，本机保留前 5 名。数据仅存在当前浏览器的本地存储中，换设备或清空浏览器数据后会重置。</p>
+    </header>
+
+    <div class="leaderboard-table-wrap">
+      <table class="leaderboard-table" aria-label="前五名排行榜">
+        <thead>
+          <tr>
+            <th>名次</th>
+            <th>称呼</th>
+            <th>得分</th>
+            <th>模式</th>
+            <th>单位</th>
+            <th>时间</th>
+          </tr>
+        </thead>
+        <tbody id="lbTableBody"></tbody>
+      </table>
+      <div class="leaderboard-empty" id="lbEmpty" hidden>暂无记录，完成故事模式或表演场景并进入前 5 名即可上榜。</div>
+    </div>
+
+    <div class="leaderboard-page-tools">
+      <button type="button" id="lbRefreshBtn">刷新列表</button>
+    </div>
+
+    <script>
+      function formatTime(iso) {
+        if (!iso) return "—";
+        try {
+          var d = new Date(iso);
+          return d.toLocaleString("zh-CN", { hour12: false });
+        } catch (e) {
+          return iso;
+        }
+      }
+
+      function renderTable(entries) {
+        var body = document.getElementById("lbTableBody");
+        var empty = document.getElementById("lbEmpty");
+        body.innerHTML = "";
+
+        if (!entries.length) {
+          empty.hidden = false;
+          return;
+        }
+        empty.hidden = true;
+
+        entries.forEach(function (entry) {
+          var row = document.createElement("tr");
+          var name = entry.profile.displayName || "—";
+          if (entry.profile.nickname) name += "（" + entry.profile.nickname + "）";
+          row.innerHTML =
+            '<td class="rank-cell">' +
+            entry.rank +
+            "</td>" +
+            "<td>" +
+            name +
+            "</td>" +
+            '<td class="score-cell">' +
+            entry.score +
+            "</td>" +
+            "<td>" +
+            (entry.sourceLabel || entry.source) +
+            "</td>" +
+            "<td>" +
+            (entry.profile.organization || "—") +
+            "</td>" +
+            "<td>" +
+            formatTime(entry.playedAt) +
+            "</td>";
+          body.appendChild(row);
+        });
+      }
+
+      function refresh() {
+        return window.IronFlowerLeaderboard.load().then(function (board) {
+          renderTable(board.entries);
+        });
+      }
+
+      document.getElementById("lbRefreshBtn").addEventListener("click", refresh);
+
+      refresh().then(function () {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get("submit") === "1") {
+          window.IronFlowerLeaderboardUi.tryOpenPending();
+        }
+      });
+    </script>
+    <script src="./js/home-nav.js"></script>
+  </body>
+</html>

@@ -1,0 +1,3546 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>表演场景｜铜官窑打铁花 VR 体验</title>
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #040201;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      .overlay {
+        position: fixed;
+        left: 20px;
+        top: 18px;
+        z-index: 10;
+        width: min(430px, calc(100vw - 40px));
+        color: #fff6df;
+        pointer-events: none;
+        text-shadow: 0 2px 18px rgba(0, 0, 0, 0.75);
+      }
+
+      .overlay-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+
+      .overlay h1 {
+        margin: 0;
+        font-size: 25px;
+        line-height: 1.15;
+        letter-spacing: 0;
+      }
+
+      .lang-toggle {
+        pointer-events: auto;
+        border: 1px solid rgba(255, 188, 66, 0.65);
+        border-radius: 999px;
+        background: rgba(20, 12, 5, 0.72);
+        color: #fff4d2;
+        padding: 6px 10px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+
+      .overlay .course {
+        margin: 0 0 8px;
+        color: #d8eef8;
+        font-size: 14px;
+        line-height: 1.35;
+      }
+
+      .overlay p {
+        margin: 0;
+        color: #ffd27a;
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .badge {
+        display: inline-block;
+        margin-bottom: 10px;
+        padding: 5px 9px;
+        border: 1px solid rgba(255, 188, 66, 0.5);
+        border-radius: 999px;
+        background: rgba(20, 12, 5, 0.58);
+        color: #ffbd42;
+        font-size: 12px;
+      }
+
+      body:not(.game-started) .overlay {
+        opacity: 0;
+      }
+
+      .start-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        background:
+          linear-gradient(180deg, rgba(2, 4, 8, 0.15), rgba(2, 4, 8, 0.4)),
+          url("./start-screen.jpg") center / cover no-repeat;
+        color: #fff8ce;
+        transition: opacity 520ms ease, visibility 520ms ease;
+      }
+
+      .start-screen::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(circle at 50% 30%, rgba(255, 211, 122, 0.22), transparent 28%),
+          linear-gradient(90deg, rgba(0, 0, 0, 0.38), transparent 28%, transparent 72%, rgba(0, 0, 0, 0.38));
+        pointer-events: none;
+      }
+
+      .game-started .start-screen {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      .start-content {
+        position: relative;
+        z-index: 1;
+        width: min(980px, calc(100vw - 40px));
+        min-height: 62vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        padding: clamp(28px, 5vw, 64px) 0 clamp(34px, 6vw, 72px);
+        text-align: center;
+        text-shadow: 0 4px 24px rgba(0, 0, 0, 0.84);
+      }
+
+      .start-kicker {
+        margin: 0;
+        color: #ffd27a;
+        font-size: clamp(14px, 1.6vw, 19px);
+        letter-spacing: 0;
+      }
+
+      .start-title {
+        margin: clamp(8px, 1.8vw, 18px) 0 0;
+        font-size: clamp(56px, 13vw, 168px);
+        line-height: 0.82;
+        font-weight: 950;
+        font-style: italic;
+        letter-spacing: 0;
+        color: #fff6b8;
+        text-transform: uppercase;
+        transform: skewX(-8deg);
+        filter: drop-shadow(0 0 18px rgba(255, 186, 52, 0.42));
+      }
+
+      .start-subtitle {
+        margin: 14px auto 0;
+        max-width: 720px;
+        color: #ffe4a6;
+        font-size: clamp(15px, 2vw, 22px);
+        line-height: 1.45;
+      }
+
+      .start-button {
+        border: 1px solid rgba(255, 245, 202, 0.48);
+        min-width: min(520px, calc(100vw - 68px));
+        padding: clamp(15px, 2.2vw, 24px) 32px;
+        border-radius: 2px;
+        background: rgba(232, 207, 151, 0.7);
+        color: #fffdf0;
+        box-shadow: 0 20px 80px rgba(0, 0, 0, 0.42), inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+        font-size: clamp(30px, 5vw, 64px);
+        line-height: 1;
+        font-weight: 850;
+        letter-spacing: 0;
+        cursor: pointer;
+        text-shadow: 0 3px 16px rgba(0, 0, 0, 0.45);
+        transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+      }
+
+      .start-button:hover,
+      .start-button:focus-visible {
+        transform: translateY(-2px) scale(1.015);
+        background: rgba(255, 220, 144, 0.82);
+        outline: none;
+        box-shadow: 0 24px 90px rgba(255, 172, 46, 0.24), 0 20px 80px rgba(0, 0, 0, 0.42);
+      }
+
+      .start-hint {
+        margin-top: 14px;
+        color: rgba(255, 244, 210, 0.82);
+        font-size: 15px;
+      }
+
+      .choice-panel {
+        position: fixed;
+        left: 50%;
+        bottom: 28px;
+        z-index: 20;
+        width: min(520px, calc(100vw - 36px));
+        transform: translateX(-50%);
+        padding: 18px;
+        border: 1px solid rgba(255, 188, 66, 0.7);
+        border-radius: 8px;
+        background: rgba(12, 7, 3, 0.86);
+        box-shadow: 0 20px 70px rgba(0, 0, 0, 0.42);
+        color: #fff4d2;
+        pointer-events: auto;
+      }
+
+      .choice-panel[hidden] {
+        display: none;
+      }
+
+      .choice-panel h2 {
+        margin: 0 0 8px;
+        font-size: 19px;
+        line-height: 1.25;
+      }
+
+      .choice-panel p {
+        margin: 0 0 14px;
+        color: #ffd27a;
+        font-size: 15px;
+        line-height: 1.5;
+      }
+
+      .choice-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+
+      .choice-actions button {
+        border: 1px solid rgba(255, 188, 66, 0.72);
+        border-radius: 6px;
+        background: rgba(255, 188, 66, 0.18);
+        color: #fff4d2;
+        padding: 9px 14px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+
+      .choice-actions button:first-child {
+        background: rgba(255, 188, 66, 0.72);
+        color: #211306;
+        font-weight: 700;
+      }
+
+      body.vr-mode .choice-panel {
+        display: none !important;
+      }
+    </style>
+  </head>
+
+  <body data-scene="materials">
+    <div id="startScreen" class="start-screen">
+      <div class="start-content">
+        <div>
+          <p class="start-kicker">Tongguan Kiln Iron Flower VR Game</p>
+          <h1 class="start-title">Iron Soul</h1>
+          <p class="start-subtitle">铜官窑 · 打铁花 / Intangible Heritage Iron Flower Experience</p>
+        </div>
+        <div>
+          <button id="startButton" class="start-button" type="button">Start Strike !</button>
+          <div class="start-hint">点击按钮开始 / Click to begin</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay">
+      <span class="badge">Iron Flower VR Prototype</span>
+      <div class="overlay-row">
+        <h1 id="overlayTitle">铜官窑·打铁花</h1>
+        <button id="langToggle" class="lang-toggle" type="button">English</button>
+      </div>
+      <div class="course">设计前沿专题研究-组2 / Design Frontiers Research - Group 2</div>
+      <p id="overlayIntro">三步体验：选择材料加入炉中、加热点火等待铁水流出、进入表演场景用双手工具打铁花。</p>
+    </div>
+
+    <div id="choicePanel" class="choice-panel" hidden>
+      <h2 id="choiceTitle">材料名称</h2>
+      <p id="choiceBody">材料功能说明</p>
+      <div class="choice-actions">
+        <button id="choiceYes" type="button">加入熔炉</button>
+        <button id="choiceNo" type="button">取消</button>
+      </div>
+    </div>
+
+    <a-scene
+      background="color: #040201"
+      renderer="antialias: true; colorManagement: true; physicallyCorrectLights: true"
+      xr-mode-ui="enabled: true"
+      device-orientation-permission-ui="enabled: true"
+      shadow="type: pcfsoft"
+      cursor="rayOrigin: mouse"
+      raycaster="objects: .clickable"
+      manual-interaction
+    >
+      <a-assets>
+        <img id="workshopBg" src="./scene1-vr.jpg" />
+        <img id="performanceBg" src="./scene2-vr.jpg" />
+        <a-asset-item id="personModel1Asset" src="./人物模型1/4df5a557-e5dc-43f5-a4ad-05ac560be566.glb"></a-asset-item>
+        <a-asset-item id="personModel2Asset" src="./人物模型2/4795824a-ac11-4adc-9ada-d5666b0dda4a.glb"></a-asset-item>
+        <a-asset-item id="performanceFurnaceAsset" src="./燃烧熔铁炉/b45a0d6e-f521-4c08-9bb0-5739077b35d4.glb"></a-asset-item>
+        <a-asset-item id="shovelAsset" src="./模型1/铁锹/249b749e-8bc3-4492-bff4-7bc3acb5946c.glb"></a-asset-item>
+        <a-mixin
+          id="spark"
+          geometry="primitive: sphere; radius: 0.025"
+          material="color: #ffb13d; emissive: #ff6a00; emissiveIntensity: 2.6; transparent: true; opacity: 1"
+        ></a-mixin>
+      </a-assets>
+
+      <a-sky id="environmentSky" src="#workshopBg" color="#040201" rotation="0 -88 0"></a-sky>
+
+      <a-entity id="workshopBackdrop" position="-4.5 2.45 -10.2">
+        <a-image
+          width="16"
+          height="9"
+          src="#workshopBg"
+          material="shader: flat; side: double; transparent: true; opacity: 0.98"
+        ></a-image>
+        <a-plane
+          position="0 0 -0.035"
+          width="16.2"
+          height="9.2"
+          color="#050302"
+          material="shader: flat; transparent: true; opacity: 0.36"
+        ></a-plane>
+      </a-entity>
+
+      <a-entity id="performanceBackdrop" position="7.2 2.55 -10.4" visible="false">
+        <a-image
+          width="17"
+          height="9.56"
+          src="#performanceBg"
+          material="shader: flat; side: double; transparent: true; opacity: 0.98"
+        ></a-image>
+        <a-plane
+          position="0 0 -0.035"
+          width="17.2"
+          height="9.76"
+          color="#03070b"
+          material="shader: flat; transparent: true; opacity: 0.32"
+        ></a-plane>
+      </a-entity>
+
+      <a-plane
+        rotation="-90 0 0"
+        width="34"
+        height="34"
+        color="#090706"
+        material="roughness: 0.88; metalness: 0.04"
+        shadow="receive: true"
+      ></a-plane>
+
+      <a-entity id="pathGuides">
+        <a-ring id="workbenchRing" position="-5.0 0.012 -1.8" rotation="-90 0 0" radius-inner="0.95" radius-outer="1.02" color="#ffbd42" material="transparent: true; opacity: 0.55"></a-ring>
+        <a-ring id="furnaceRing" position="-1.5 0.012 -5.5" rotation="-90 0 0" radius-inner="0.78" radius-outer="0.84" color="#ff8a1c" material="transparent: true; opacity: 0.48"></a-ring>
+        <a-cylinder id="workbenchConnector" position="-3.25 0.018 -3.65" radius="0.022" height="4.2" rotation="0 0 90" color="#20d4ff" material="transparent: true; opacity: 0.3"></a-cylinder>
+      </a-entity>
+
+      <a-entity id="materialSelection" position="-5.0 0 -1.8">
+        <!-- TABLETOP: thick hammered iron slab -->
+        <a-box position="0 0.55 0" width="3.8" height="0.1" depth="1.4"
+          color="#2a2520" material="metalness: 0.7; roughness: 0.45"></a-box>
+
+        <!-- APRON: slightly recessed skirt under the tabletop -->
+        <a-box position="0 0.45 0" width="3.74" height="0.08" depth="1.26"
+          color="#1f1a16" material="metalness: 0.7; roughness: 0.5"></a-box>
+
+        <!-- 4 SQUARE CAPS where each leg meets the apron -->
+        <a-box position="-1.78 0.41 -0.62" width="0.13" height="0.06" depth="0.13"
+          color="#1f1a16" material="metalness: 0.75; roughness: 0.4"></a-box>
+        <a-box position="1.78 0.41 -0.62" width="0.13" height="0.06" depth="0.13"
+          color="#1f1a16" material="metalness: 0.75; roughness: 0.4"></a-box>
+        <a-box position="-1.78 0.41 0.62" width="0.13" height="0.06" depth="0.13"
+          color="#1f1a16" material="metalness: 0.75; roughness: 0.4"></a-box>
+        <a-box position="1.78 0.41 0.62" width="0.13" height="0.06" depth="0.13"
+          color="#1f1a16" material="metalness: 0.75; roughness: 0.4"></a-box>
+
+        <!-- 4 CYLINDRICAL LEGS at the corners -->
+        <a-cylinder position="-1.78 0.21 -0.62" radius="0.05" height="0.36"
+          color="#2a2520" material="metalness: 0.72; roughness: 0.45"></a-cylinder>
+        <a-cylinder position="1.78 0.21 -0.62" radius="0.05" height="0.36"
+          color="#2a2520" material="metalness: 0.72; roughness: 0.45"></a-cylinder>
+        <a-cylinder position="-1.78 0.21 0.62" radius="0.05" height="0.36"
+          color="#2a2520" material="metalness: 0.72; roughness: 0.45"></a-cylinder>
+        <a-cylinder position="1.78 0.21 0.62" radius="0.05" height="0.36"
+          color="#2a2520" material="metalness: 0.72; roughness: 0.45"></a-cylinder>
+
+        <!-- 4 SQUARE FEET at the bottom of each leg -->
+        <a-box position="-1.78 0.025 -0.62" width="0.14" height="0.05" depth="0.14"
+          color="#1f1a16" material="metalness: 0.7; roughness: 0.5"></a-box>
+        <a-box position="1.78 0.025 -0.62" width="0.14" height="0.05" depth="0.14"
+          color="#1f1a16" material="metalness: 0.7; roughness: 0.5"></a-box>
+        <a-box position="-1.78 0.025 0.62" width="0.14" height="0.05" depth="0.14"
+          color="#1f1a16" material="metalness: 0.7; roughness: 0.5"></a-box>
+        <a-box position="1.78 0.025 0.62" width="0.14" height="0.05" depth="0.14"
+          color="#1f1a16" material="metalness: 0.7; roughness: 0.5"></a-box>
+
+        <!-- BOTTOM STRETCHERS: two long rails along the length, joined by a centre cross-piece -->
+        <a-box position="0 0.11 -0.62" width="3.5" height="0.045" depth="0.05"
+          color="#2a2520" material="metalness: 0.72; roughness: 0.5"></a-box>
+        <a-box position="0 0.11 0.62" width="3.5" height="0.045" depth="0.05"
+          color="#2a2520" material="metalness: 0.72; roughness: 0.5"></a-box>
+        <a-box position="0 0.11 0" width="0.05" height="0.045" depth="1.2"
+          color="#2a2520" material="metalness: 0.72; roughness: 0.5"></a-box>
+
+        <!-- RIVETS on the apron at each corner -->
+        <a-sphere position="-1.72 0.45 -0.635" radius="0.018" color="#4a3e30" material="metalness: 0.85; roughness: 0.35"></a-sphere>
+        <a-sphere position="1.72 0.45 -0.635" radius="0.018" color="#4a3e30" material="metalness: 0.85; roughness: 0.35"></a-sphere>
+        <a-sphere position="-1.72 0.45 0.635" radius="0.018" color="#4a3e30" material="metalness: 0.85; roughness: 0.35"></a-sphere>
+        <a-sphere position="1.72 0.45 0.635" radius="0.018" color="#4a3e30" material="metalness: 0.85; roughness: 0.35"></a-sphere>
+
+        <!-- Row 1: 煨子, 铁钳, 勺子, 木板, 高岭土 (all incorrect/tools) -->
+                  <a-ring class="material-halo" position="0 0.008 0" rotation="-90 0 0" radius-inner="0.16" radius-outer="0.21" color="#ffbd42" material="transparent: true; opacity: 0.88; emissive: #ffbd42; emissiveIntensity: 0.55" pulse></a-ring>
+
+        <a-entity id="matCrucible" class="clickable material-item" position="-1.4 0.71 -0.35" material-choice="key: crucible; correct: false">
+          <a-cylinder radius="0.13" height="0.22" color="#c9b890" material="roughness: 0.85"></a-cylinder>
+          <a-cylinder position="0 0.12 0" radius="0.14" height="0.03" color="#9e8868"></a-cylinder>
+        </a-entity>
+
+                  <a-ring class="material-halo" position="0 0.008 0" rotation="-90 0 0" radius-inner="0.16" radius-outer="0.21" color="#ffbd42" material="transparent: true; opacity: 0.88; emissive: #ffbd42; emissiveIntensity: 0.55" pulse></a-ring>
+
+
+        <a-entity id="matTongs" class="clickable material-item" position="-0.7 0.78 -0.35" material-choice="key: tongs; correct: false">
+          <a-cylinder position="-0.04 0 0" radius="0.015" height="0.36" rotation="0 0 8" color="#3a2a1c"></a-cylinder>
+          <a-cylinder position="0.04 0 0" radius="0.015" height="0.36" rotation="0 0 -8" color="#3a2a1c"></a-cylinder>
+          <a-box position="0 -0.16 0" width="0.12" height="0.04" depth="0.05" color="#5a4030"></a-box>
+        </a-entity>
+
+                  <a-ring class="material-halo" position="0 0.008 0" rotation="-90 0 0" radius-inner="0.16" radius-outer="0.21" color="#ffbd42" material="transparent: true; opacity: 0.88; emissive: #ffbd42; emissiveIntensity: 0.55" pulse></a-ring>
+
+
+        <a-entity id="matLadle" class="clickable material-item" position="0 0.62 -0.35" material-choice="key: ladle; correct: false">
+          <a-cylinder position="-0.05 0.04 0" radius="0.08" height="0.05" color="#2b170c"></a-cylinder>
+          <a-cylinder position="0.15 0 0" radius="0.014" height="0.4" rotation="0 0 90" color="#8a521f"></a-cylinder>
+        </a-entity>
+
+                  <a-ring class="material-halo" position="0 0.008 0" rotation="-90 0 0" radius-inner="0.16" radius-outer="0.21" color="#ffbd42" material="transparent: true; opacity: 0.88; emissive: #ffbd42; emissiveIntensity: 0.55" pulse></a-ring>
+
+
+        <a-entity id="matPaddle" class="clickable material-item" position="0.7 0.6 -0.35" material-choice="key: paddle; correct: false">
+          <a-box position="-0.06 0.04 0" width="0.16" height="0.04" depth="0.1" color="#7c3a16"></a-box>
+          <a-cylinder position="0.13 0.04 0" radius="0.014" height="0.34" rotation="0 0 90" color="#5c2a11"></a-cylinder>
+        </a-entity>
+
+                  <a-ring class="material-halo" position="0 0.008 0" rotation="-90 0 0" radius-inner="0.16" radius-outer="0.21" color="#ffbd42" material="transparent: true; opacity: 0.88; emissive: #ffbd42; emissiveIntensity: 0.55" pulse></a-ring>
+
+
+        <a-entity id="matClay" class="clickable material-item" position="1.4 0.6 -0.35" material-choice="key: clay; correct: false">
+          <!-- Dark iron dish floor -->
+          <a-cylinder position="0 0.006 0" radius="0.14" height="0.012"
+            color="#2a2520" material="metalness: 0.6; roughness: 0.55"></a-cylinder>
+          <!-- Raised dish rim (torus around the edge) -->
+          <a-torus position="0 0.014 0" radius="0.13" radius-tubular="0.011"
+            rotation="90 0 0" color="#1f1a16" material="metalness: 0.65; roughness: 0.55"></a-torus>
+          <!-- Subtle rust patina on the dish -->
+          <a-cylinder position="0.06 0.013 0.05" radius="0.025" height="0.002"
+            color="#4a2c14" material="metalness: 0.45; roughness: 0.85"></a-cylinder>
+          <a-cylinder position="-0.08 0.013 -0.04" radius="0.02" height="0.002"
+            color="#3a2010" material="metalness: 0.45; roughness: 0.85"></a-cylinder>
+
+          <!-- Kaolin clay chunks piled in center (irregular white lumps) -->
+          <a-sphere position="0 0.055 0" radius="0.04" scale="1.1 0.95 1.05"
+            color="#f0eae0" material="roughness: 0.92; metalness: 0.02"></a-sphere>
+          <a-sphere position="-0.035 0.045 0.028" radius="0.032" scale="1.05 0.9 1.1"
+            color="#f5f0e8" material="roughness: 0.92; metalness: 0.02"></a-sphere>
+          <a-sphere position="0.038 0.05 -0.022" radius="0.035" scale="1 1.05 0.95"
+            color="#eae5db" material="roughness: 0.92; metalness: 0.02"></a-sphere>
+          <a-sphere position="-0.025 0.03 -0.04" radius="0.028" scale="1.1 0.9 1"
+            color="#f0eae0" material="roughness: 0.92; metalness: 0.02"></a-sphere>
+          <a-sphere position="0.045 0.03 0.035" radius="0.027" scale="0.95 1.05 1.1"
+            color="#f5f0e8" material="roughness: 0.92; metalness: 0.02"></a-sphere>
+          <a-sphere position="0.005 0.085 0.008" radius="0.026" scale="1.1 0.95 1"
+            color="#f8f3eb" material="roughness: 0.92; metalness: 0.02"></a-sphere>
+          <a-sphere position="-0.06 0.03 0.005" radius="0.022" scale="1 1.1 0.95"
+            color="#ece6dc" material="roughness: 0.92; metalness: 0.02"></a-sphere>
+
+          <!-- Powder spillage on the dish (flat soft mounds) -->
+          <a-cylinder position="0.08 0.0155 0.045" radius="0.022" height="0.005"
+            color="#f5f0e8" material="roughness: 0.95"></a-cylinder>
+          <a-cylinder position="-0.085 0.0155 -0.025" radius="0.025" height="0.005"
+            color="#f0eae0" material="roughness: 0.95"></a-cylinder>
+          <a-cylinder position="0.055 0.0155 -0.075" radius="0.018" height="0.004"
+            color="#f5f0e8" material="roughness: 0.95"></a-cylinder>
+          <a-cylinder position="-0.045 0.0155 0.08" radius="0.02" height="0.004"
+            color="#f0eae0" material="roughness: 0.95"></a-cylinder>
+
+          <!-- Tiny scattered powder grains -->
+          <a-sphere position="0.082 0.02 0.07" radius="0.005" color="#f8f3eb" material="roughness: 0.95"></a-sphere>
+          <a-sphere position="-0.075 0.02 0.05" radius="0.005" color="#f5f0e8" material="roughness: 0.95"></a-sphere>
+          <a-sphere position="0.04 0.02 -0.09" radius="0.005" color="#f0eae0" material="roughness: 0.95"></a-sphere>
+        </a-entity>
+
+        <!-- Row 2: 食盐, 生铁片, 黄铜, 稻草卷, 铁炭 (all correct) -->
+                  <a-ring class="material-halo" position="0 0.008 0" rotation="-90 0 0" radius-inner="0.16" radius-outer="0.21" color="#ffbd42" material="transparent: true; opacity: 0.88; emissive: #ffbd42; emissiveIntensity: 0.55" pulse></a-ring>
+
+        <a-entity id="matSalt" class="clickable material-item" position="-1.4 0.6 0.32" material-choice="key: salt; correct: true">
+          <!-- Iron box base (the floor inside) -->
+          <a-box position="0 0.0075 0" width="0.2" height="0.015" depth="0.2"
+            color="#3a342d" material="metalness: 0.65; roughness: 0.6"></a-box>
+          <!-- 4 wall panels forming the open-top box -->
+          <a-box position="0 0.06 -0.094" width="0.2" height="0.105" depth="0.012"
+            color="#3a342d" material="metalness: 0.65; roughness: 0.6"></a-box>
+          <a-box position="0 0.06 0.094" width="0.2" height="0.105" depth="0.012"
+            color="#3a342d" material="metalness: 0.65; roughness: 0.6"></a-box>
+          <a-box position="0.094 0.06 0" width="0.012" height="0.105" depth="0.2"
+            color="#3a342d" material="metalness: 0.65; roughness: 0.6"></a-box>
+          <a-box position="-0.094 0.06 0" width="0.012" height="0.105" depth="0.2"
+            color="#3a342d" material="metalness: 0.65; roughness: 0.6"></a-box>
+          <!-- Top rim cap (slightly rolled-over lip) -->
+          <a-box position="0 0.115 -0.094" width="0.21" height="0.008" depth="0.018"
+            color="#2a261f" material="metalness: 0.7; roughness: 0.55"></a-box>
+          <a-box position="0 0.115 0.094" width="0.21" height="0.008" depth="0.018"
+            color="#2a261f" material="metalness: 0.7; roughness: 0.55"></a-box>
+          <a-box position="0.094 0.115 0" width="0.018" height="0.008" depth="0.21"
+            color="#2a261f" material="metalness: 0.7; roughness: 0.55"></a-box>
+          <a-box position="-0.094 0.115 0" width="0.018" height="0.008" depth="0.21"
+            color="#2a261f" material="metalness: 0.7; roughness: 0.55"></a-box>
+          <!-- Rusty patina patches on the walls -->
+          <a-box position="0.101 0.04 0.04" width="0.004" height="0.03" depth="0.025"
+            color="#4a2c14" material="metalness: 0.45; roughness: 0.85"></a-box>
+          <a-box position="-0.101 0.05 -0.05" width="0.004" height="0.035" depth="0.03"
+            color="#5a3618" material="metalness: 0.45; roughness: 0.85"></a-box>
+          <a-box position="0.05 0.025 0.101" width="0.025" height="0.025" depth="0.004"
+            color="#4a2c14" material="metalness: 0.45; roughness: 0.85"></a-box>
+          <a-box position="-0.06 0.07 -0.101" width="0.03" height="0.025" depth="0.004"
+            color="#3a2010" material="metalness: 0.45; roughness: 0.85"></a-box>
+
+          <!-- Salt mound inside (rounded flattened sphere) -->
+          <a-sphere position="0 0.075 0" radius="0.08" scale="1 0.45 1"
+            color="#f8f4ec" material="roughness: 0.55; metalness: 0.04"></a-sphere>
+          <a-sphere position="0 0.085 0" radius="0.055" scale="1 0.55 1"
+            color="#fafaf2" material="roughness: 0.5; metalness: 0.04"></a-sphere>
+
+          <!-- Top-layer salt crystals (small bright spheres in clusters) -->
+          <a-sphere position="0 0.105 0" radius="0.012" color="#ffffff" material="roughness: 0.42; metalness: 0.05"></a-sphere>
+          <a-sphere position="0.022 0.102 -0.015" radius="0.01" color="#fafafa" material="roughness: 0.42; metalness: 0.05"></a-sphere>
+          <a-sphere position="-0.018 0.102 0.02" radius="0.011" color="#f8f4ec" material="roughness: 0.42; metalness: 0.05"></a-sphere>
+          <a-sphere position="0.013 0.108 0.025" radius="0.009" color="#ffffff" material="roughness: 0.42; metalness: 0.05"></a-sphere>
+          <a-sphere position="-0.023 0.1 -0.02" radius="0.01" color="#fafafa" material="roughness: 0.42; metalness: 0.05"></a-sphere>
+          <a-sphere position="0.03 0.105 0.012" radius="0.009" color="#f8f4ec" material="roughness: 0.42; metalness: 0.05"></a-sphere>
+          <a-sphere position="-0.03 0.105 0.005" radius="0.009" color="#ffffff" material="roughness: 0.42; metalness: 0.05"></a-sphere>
+
+          <!-- Slope-side salt crystals -->
+          <a-sphere position="0.05 0.085 0" radius="0.008" color="#f8f4ec" material="roughness: 0.42; metalness: 0.05"></a-sphere>
+          <a-sphere position="-0.05 0.085 0.01" radius="0.008" color="#ffffff" material="roughness: 0.42; metalness: 0.05"></a-sphere>
+          <a-sphere position="0.035 0.082 -0.05" radius="0.009" color="#fafafa" material="roughness: 0.42; metalness: 0.05"></a-sphere>
+          <a-sphere position="-0.04 0.078 -0.045" radius="0.008" color="#f8f4ec" material="roughness: 0.42; metalness: 0.05"></a-sphere>
+          <a-sphere position="0.055 0.075 0.045" radius="0.009" color="#ffffff" material="roughness: 0.42; metalness: 0.05"></a-sphere>
+          <a-sphere position="-0.055 0.08 0.035" radius="0.008" color="#fafafa" material="roughness: 0.42; metalness: 0.05"></a-sphere>
+          <a-sphere position="0 0.075 0.06" radius="0.009" color="#f8f4ec" material="roughness: 0.42; metalness: 0.05"></a-sphere>
+          <a-sphere position="0 0.075 -0.06" radius="0.009" color="#ffffff" material="roughness: 0.42; metalness: 0.05"></a-sphere>
+        </a-entity>
+
+                  <a-ring class="material-halo" position="0 0.008 0" rotation="-90 0 0" radius-inner="0.16" radius-outer="0.21" color="#ffbd42" material="transparent: true; opacity: 0.88; emissive: #ffbd42; emissiveIntensity: 0.55" pulse></a-ring>
+
+
+        <a-entity id="matRawIron" class="clickable material-item" position="-0.7 0.63 0.32" material-choice="key: rawIron; correct: true">
+          <!-- Main forged iron slab — lighter so the metallic sheen reads -->
+          <a-box position="0 0 0" width="0.32" height="0.06" depth="0.24"
+            color="#3a3530" material="metalness: 0.72; roughness: 0.42"></a-box>
+          <!-- Slightly raised hammered plateau on top -->
+          <a-box position="0 0.034 0" width="0.24" height="0.008" depth="0.16"
+            color="#4a4540" material="metalness: 0.78; roughness: 0.36"></a-box>
+          <!-- Polished bevel along the front edge that catches light -->
+          <a-box position="0 0.025 0.121" width="0.32" height="0.012" depth="0.004"
+            color="#605a52" material="metalness: 0.88; roughness: 0.22"></a-box>
+          <!-- Polished bevel along the back edge -->
+          <a-box position="0 0.025 -0.121" width="0.32" height="0.012" depth="0.004"
+            color="#56504a" material="metalness: 0.85; roughness: 0.25"></a-box>
+          <!-- Subtle rust patina patches -->
+          <a-box position="0.115 0.038 0.08" width="0.05" height="0.005" depth="0.05"
+            color="#6a4220" material="metalness: 0.42; roughness: 0.82"></a-box>
+          <a-box position="-0.115 0.038 -0.08" width="0.045" height="0.005" depth="0.045"
+            color="#5a3618" material="metalness: 0.42; roughness: 0.82"></a-box>
+          <!-- Dark oxide scale patches on top -->
+          <a-box position="-0.04 0.038 0.05" width="0.05" height="0.003" depth="0.04"
+            color="#1a1612" material="metalness: 0.5; roughness: 0.92"></a-box>
+          <a-box position="0.05 0.038 -0.05" width="0.04" height="0.003" depth="0.035"
+            color="#1d1814" material="metalness: 0.5; roughness: 0.92"></a-box>
+        </a-entity>
+
+                  <a-ring class="material-halo" position="0 0.008 0" rotation="-90 0 0" radius-inner="0.16" radius-outer="0.21" color="#ffbd42" material="transparent: true; opacity: 0.88; emissive: #ffbd42; emissiveIntensity: 0.55" pulse></a-ring>
+
+
+        <a-entity id="matBrass" class="clickable material-item" position="0 0.68 0.32" material-choice="key: brass; correct: true">
+          <!-- Main brass cylindrical billet (lying horizontal) -->
+          <a-cylinder radius="0.08" height="0.22" rotation="0 0 90"
+            color="#d8a418" material="metalness: 0.92; roughness: 0.18; emissive: #8a5d0a; emissiveIntensity: 0.22"></a-cylinder>
+          <!-- Darker outer rim at the cut ends (machined surface ridge) -->
+          <a-cylinder position="0.112 0 0" radius="0.083" height="0.003" rotation="0 0 90"
+            color="#a87810" material="metalness: 0.82; roughness: 0.4"></a-cylinder>
+          <a-cylinder position="-0.112 0 0" radius="0.083" height="0.003" rotation="0 0 90"
+            color="#a87810" material="metalness: 0.82; roughness: 0.4"></a-cylinder>
+          <!-- Brighter inner face circle (lathe-cut center, polished) -->
+          <a-cylinder position="0.115 0 0" radius="0.07" height="0.002" rotation="0 0 90"
+            color="#e8b830" material="metalness: 0.95; roughness: 0.12; emissive: #b88a16; emissiveIntensity: 0.35"></a-cylinder>
+          <a-cylinder position="-0.115 0 0" radius="0.07" height="0.002" rotation="0 0 90"
+            color="#e8b830" material="metalness: 0.95; roughness: 0.12; emissive: #b88a16; emissiveIntensity: 0.35"></a-cylinder>
+          <!-- Center dot showing lathe pivot point -->
+          <a-cylinder position="0.117 0 0" radius="0.012" height="0.002" rotation="0 0 90"
+            color="#b88516" material="metalness: 0.88; roughness: 0.25"></a-cylinder>
+          <a-cylinder position="-0.117 0 0" radius="0.012" height="0.002" rotation="0 0 90"
+            color="#b88516" material="metalness: 0.88; roughness: 0.25"></a-cylinder>
+        </a-entity>
+
+                  <a-ring class="material-halo" position="0 0.008 0" rotation="-90 0 0" radius-inner="0.16" radius-outer="0.21" color="#ffbd42" material="transparent: true; opacity: 0.88; emissive: #ffbd42; emissiveIntensity: 0.55" pulse></a-ring>
+
+
+        <a-entity id="matStraw" class="clickable material-item" position="0.7 0.66 0.32" material-choice="key: straw; correct: true">
+          <!-- Main straw bundle body (lying horizontal) -->
+          <a-cylinder radius="0.06" height="0.32" rotation="0 0 90"
+            color="#c89540" material="roughness: 0.88; metalness: 0.02"></a-cylinder>
+          <!-- Slightly darker inner shadow to give volume -->
+          <a-cylinder position="0 -0.022 -0.022" radius="0.055" height="0.33" rotation="0 0 90"
+            color="#a87528" material="roughness: 0.9"></a-cylinder>
+          <!-- Brighter top highlight -->
+          <a-cylinder position="0 0.025 0.02" radius="0.045" height="0.31" rotation="0 0 90"
+            color="#dba550" material="roughness: 0.82"></a-cylinder>
+
+          <!-- 3 thick twisted rope bands (more prominent than before) -->
+          <a-torus position="-0.09 0 0" radius="0.066" radius-tubular="0.01"
+            rotation="0 90 0" color="#7e5a28" material="roughness: 0.7"></a-torus>
+          <a-torus position="0 0 0" radius="0.066" radius-tubular="0.01"
+            rotation="0 90 0" color="#7e5a28" material="roughness: 0.7"></a-torus>
+          <a-torus position="0.09 0 0" radius="0.066" radius-tubular="0.01"
+            rotation="0 90 0" color="#7e5a28" material="roughness: 0.7"></a-torus>
+          <!-- Lighter rope highlight bands on top of the darker rope (twisted-rope effect) -->
+          <a-torus position="-0.09 0 0" radius="0.066" radius-tubular="0.005"
+            rotation="0 90 0" color="#a07840" material="roughness: 0.7"></a-torus>
+          <a-torus position="0 0 0" radius="0.066" radius-tubular="0.005"
+            rotation="0 90 0" color="#a07840" material="roughness: 0.7"></a-torus>
+          <a-torus position="0.09 0 0" radius="0.066" radius-tubular="0.005"
+            rotation="0 90 0" color="#a07840" material="roughness: 0.7"></a-torus>
+
+          <!-- Right end cap: packed straw cross-section (concentric sphere pattern) -->
+          <a-sphere position="0.162 0 0" radius="0.014" color="#967530" material="roughness: 0.85"></a-sphere>
+          <a-sphere position="0.162 0.025 0.018" radius="0.012" color="#a87530" material="roughness: 0.85"></a-sphere>
+          <a-sphere position="0.162 -0.022 0.022" radius="0.012" color="#967530" material="roughness: 0.85"></a-sphere>
+          <a-sphere position="0.162 0.022 -0.025" radius="0.012" color="#b8853a" material="roughness: 0.85"></a-sphere>
+          <a-sphere position="0.162 -0.028 -0.015" radius="0.012" color="#8e6828" material="roughness: 0.85"></a-sphere>
+          <a-sphere position="0.162 0.042 0.002" radius="0.009" color="#a8783a" material="roughness: 0.85"></a-sphere>
+          <a-sphere position="0.162 -0.042 -0.002" radius="0.009" color="#967030" material="roughness: 0.85"></a-sphere>
+          <a-sphere position="0.162 0.002 0.042" radius="0.009" color="#b8854a" material="roughness: 0.85"></a-sphere>
+          <a-sphere position="0.162 0.002 -0.042" radius="0.009" color="#8e6828" material="roughness: 0.85"></a-sphere>
+
+          <!-- Left end cap (mirror) -->
+          <a-sphere position="-0.162 0 0" radius="0.014" color="#967530" material="roughness: 0.85"></a-sphere>
+          <a-sphere position="-0.162 0.025 -0.018" radius="0.012" color="#a87530" material="roughness: 0.85"></a-sphere>
+          <a-sphere position="-0.162 -0.022 -0.022" radius="0.012" color="#967530" material="roughness: 0.85"></a-sphere>
+          <a-sphere position="-0.162 0.022 0.025" radius="0.012" color="#b8853a" material="roughness: 0.85"></a-sphere>
+          <a-sphere position="-0.162 -0.028 0.015" radius="0.012" color="#8e6828" material="roughness: 0.85"></a-sphere>
+          <a-sphere position="-0.162 0.042 0.002" radius="0.009" color="#a8783a" material="roughness: 0.85"></a-sphere>
+          <a-sphere position="-0.162 -0.042 -0.002" radius="0.009" color="#967030" material="roughness: 0.85"></a-sphere>
+          <a-sphere position="-0.162 0.002 -0.042" radius="0.009" color="#b8854a" material="roughness: 0.85"></a-sphere>
+          <a-sphere position="-0.162 0.002 0.042" radius="0.009" color="#8e6828" material="roughness: 0.85"></a-sphere>
+
+          <!-- A few loose straws sticking out from the ends -->
+          <a-cylinder position="0.18 0.045 0.022" radius="0.0035" height="0.04" rotation="0 0 92" color="#d6a040"></a-cylinder>
+          <a-cylinder position="0.182 -0.022 -0.012" radius="0.0035" height="0.045" rotation="5 0 95" color="#c89540"></a-cylinder>
+          <a-cylinder position="-0.182 0.04 -0.022" radius="0.0035" height="0.045" rotation="0 5 88" color="#d6a040"></a-cylinder>
+          <a-cylinder position="-0.18 -0.025 0.028" radius="0.0035" height="0.04" rotation="-5 0 85" color="#c89540"></a-cylinder>
+        </a-entity>
+
+                  <a-ring class="material-halo" position="0 0.008 0" rotation="-90 0 0" radius-inner="0.16" radius-outer="0.21" color="#ffbd42" material="transparent: true; opacity: 0.88; emissive: #ffbd42; emissiveIntensity: 0.55" pulse></a-ring>
+
+
+        <a-entity id="matCharcoal" class="clickable material-item" position="1.4 0.72 0.32" material-choice="key: charcoal; correct: true">
+          <a-sphere radius="0.12" color="#1d1915"></a-sphere>
+          <a-sphere position="0.13 0.02 0.06" radius="0.085" color="#2f2a24"></a-sphere>
+          <a-sphere position="-0.1 0.01 0.07" radius="0.075" color="#11100e"></a-sphere>
+        </a-entity>
+            </a-entity>
+
+      <a-entity id="materialProgress" position="-5.0 1.34 -1.8" face-camera>
+        <a-sphere id="matDot1" position="-0.48 0 0" radius="0.055" color="#163a34"></a-sphere>
+        <a-sphere id="matDot2" position="-0.24 0 0" radius="0.055" color="#163a34"></a-sphere>
+        <a-sphere id="matDot3" position="0 0 0" radius="0.055" color="#163a34"></a-sphere>
+        <a-sphere id="matDot4" position="0.24 0 0" radius="0.055" color="#163a34"></a-sphere>
+        <a-sphere id="matDot5" position="0.48 0 0" radius="0.055" color="#163a34"></a-sphere>
+      </a-entity>
+
+      <a-entity id="labelMaterials" position="-5.0 2.2 -1.8" canvas-label="text: 步骤1：了解材料信息并选择正确材料入炉|待加入：稻草卷、铁炭、生铁片、黄铜、食盐; width: 5.6; height: 1.4" face-camera></a-entity>
+
+      <a-entity id="vrChoicePanel" visible="false">
+        <a-entity id="vrChoiceCard" face-camera position="0 0.68 0">
+          <a-plane width="1.45" height="0.95" color="#120a04" material="transparent: true; opacity: 0.92; side: double"></a-plane>
+          <a-ring position="0 0 0.002" radius-inner="0.68" radius-outer="0.71" color="#ffbd42" material="transparent: true; opacity: 0.75"></a-ring>
+          <a-text id="vrChoiceTitle" value="" align="center" width="3.0" position="0 0.28 0.05" color="#fff4d2"></a-text>
+          <a-text id="vrChoiceBody" value="" align="center" width="2.8" position="0 0.04 0.05" color="#ffd27a" wrap-count="44"></a-text>
+          <a-entity id="vrChoiceYes" class="clickable" position="-0.3 -0.3 0.06" geometry="primitive: box; width: 0.44; height: 0.14; depth: 0.02" material="color: #ffbd42">
+            <a-text id="vrChoiceYesText" value="加入熔炉" align="center" width="1.8" position="0 0 0.015" color="#211306"></a-text>
+          </a-entity>
+          <a-entity id="vrChoiceNo" class="clickable" position="0.3 -0.3 0.06" geometry="primitive: box; width: 0.44; height: 0.14; depth: 0.02" material="color: #4a3428">
+            <a-text id="vrChoiceNoText" value="取消" align="center" width="1.8" position="0 0 0.015" color="#fff4d2"></a-text>
+          </a-entity>
+        </a-entity>
+      </a-entity>
+
+      <a-entity id="furnace" position="-1.5 0 -5.5">
+        <!-- BASE: stabilising ring under the body -->
+        <a-cylinder position="0 0.03 0" radius="0.44" height="0.06"
+          color="#2a2520" material="metalness: 0.7; roughness: 0.65"></a-cylinder>
+
+        <!-- OUTER WALL: open-ended hollow body (slimmer + taller) -->
+        <a-cylinder position="0 0.46 0" radius="0.4" height="0.8"
+          color="#3a342e" material="metalness: 0.8; roughness: 0.45; side: double"
+          open-ended="true"></a-cylinder>
+
+        <!-- INNER WALL: smaller, darker interior surface -->
+        <a-cylinder position="0 0.47 0" radius="0.37" height="0.76"
+          color="#15110d" material="metalness: 0.45; roughness: 0.85; side: double"
+          open-ended="true"></a-cylinder>
+
+        <!-- TOP OUTER RIM: brighter polished metal band -->
+        <a-torus position="0 0.86 0" radius="0.4" radius-tubular="0.028"
+          color="#8a8278" material="metalness: 0.88; roughness: 0.32"
+          rotation="90 0 0"></a-torus>
+
+        <!-- TOP INNER RIM EDGE -->
+        <a-torus position="0 0.85 0" radius="0.34" radius-tubular="0.013"
+          color="#544b41" material="metalness: 0.75; roughness: 0.5"
+          rotation="90 0 0"></a-torus>
+
+        <!-- LEFT HANDLE: half-torus opening UP, endpoints land exactly on the outer rim edge
+             Math: sqrt(Cx^2 + R^2) = 0.428 (rim radius 0.4 + tubular 0.028)
+             R=0.15, Cx=0.4009 → distance = sqrt(0.1607+0.0225) = 0.428 ✓ -->
+        <a-torus position="-0.4009 0.86 0" radius="0.15" radius-tubular="0.012"
+          color="#9a9089" material="metalness: 0.9; roughness: 0.3"
+          arc="180" rotation="180 90 0"></a-torus>
+
+        <!-- RIGHT HANDLE: mirror, endpoints land exactly on the outer rim edge -->
+        <a-torus position="0.4009 0.86 0" radius="0.15" radius-tubular="0.012"
+          color="#9a9089" material="metalness: 0.9; roughness: 0.3"
+          arc="180" rotation="180 90 0"></a-torus>
+
+        <!-- INTERIOR BOTTOM PLATE -->
+        <a-cylinder position="0 0.13 0" radius="0.37" height="0.02"
+          color="#0d0a08" material="roughness: 0.85"></a-cylinder>
+
+        <!-- GRATE BARS -->
+        <a-box position="-0.18 0.17 0" width="0.022" height="0.025" depth="0.32"
+          color="#2a2520" material="metalness: 0.85; roughness: 0.6"></a-box>
+        <a-box position="-0.09 0.17 0" width="0.022" height="0.025" depth="0.36"
+          color="#2a2520" material="metalness: 0.85; roughness: 0.6"></a-box>
+        <a-box position="0 0.17 0" width="0.022" height="0.025" depth="0.38"
+          color="#2a2520" material="metalness: 0.85; roughness: 0.6"></a-box>
+        <a-box position="0.09 0.17 0" width="0.022" height="0.025" depth="0.36"
+          color="#2a2520" material="metalness: 0.85; roughness: 0.6"></a-box>
+        <a-box position="0.18 0.17 0" width="0.022" height="0.025" depth="0.32"
+          color="#2a2520" material="metalness: 0.85; roughness: 0.6"></a-box>
+
+        <!-- CHARCOAL/EMBERS through grate -->
+        <a-sphere position="-0.1 0.14 0.06" radius="0.05" color="#1d1915" material="roughness: 0.85"></a-sphere>
+        <a-sphere position="0.08 0.14 -0.08" radius="0.045" color="#2a2520" material="roughness: 0.85"></a-sphere>
+        <a-sphere position="0.06 0.13 0.12" radius="0.038" color="#11100e" material="roughness: 0.85"></a-sphere>
+        <a-sphere position="-0.11 0.14 -0.1" radius="0.042" color="#231f1a" material="roughness: 0.85"></a-sphere>
+        <a-sphere position="0 0.13 -0.02" radius="0.035" color="#0e0d0b" material="roughness: 0.85"></a-sphere>
+
+        <!-- GLOWING EMBER DISC -->
+        <a-cylinder position="0 0.16 0" radius="0.25" height="0.015"
+          color="#ff8a1c"
+          material="emissive: #ff4a00; emissiveIntensity: 1.8; transparent: true; opacity: 0.65"></a-cylinder>
+
+        <!-- POINT LIGHT preserves warm illumination -->
+        <a-light type="point" color="#ff7a1a" intensity="2.2" distance="5"></a-light>
+
+        <!-- MOLTEN LIQUID PUDDLES: 2 flat splatters on the right side of the furnace, plain discs only -->
+        <!-- Puddle 1: large, front-right -->
+        <a-cylinder position="0.62 0.005 0.5" radius="0.16" height="0.008" scale="1.15 1 0.85"
+          color="#ffa53a"
+          material="emissive: #ff5a00; emissiveIntensity: 2.6; transparent: true; opacity: 0.95; metalness: 0.45; roughness: 0.18"></a-cylinder>
+
+        <!-- Puddle 2: medium, back-right -->
+        <a-cylinder position="0.65 0.005 -0.3" radius="0.13" height="0.008" scale="0.95 1 1.2"
+          color="#ffa53a"
+          material="emissive: #ff5a00; emissiveIntensity: 2.6; transparent: true; opacity: 0.95; metalness: 0.45; roughness: 0.18"></a-cylinder>
+      </a-entity>
+
+      <a-entity id="materialPrep" position="-3.0 0 -3.8"></a-entity>
+
+      <a-entity id="bellows" position="0 0.26 -3.4" rotation="0 -18 0">
+        <a-box id="bellowsBody" position="0 0.18 0" width="0.92" height="0.26" depth="0.46" color="#4f2410" material="roughness: 0.68"></a-box>
+        <a-box position="-0.18 0.34 0" width="0.76" height="0.06" depth="0.42" color="#8a521f"></a-box>
+        <a-box id="bellowsHandle" position="-0.62 0.45 0" width="0.1" height="0.38" depth="0.1" color="#b06c2a"></a-box>
+        <a-cylinder position="0.58 0.18 0" radius="0.045" height="0.75" rotation="0 0 90" color="#5f3a1d"></a-cylinder>
+        <a-cone position="0.98 0.18 0" radius-bottom="0.08" radius-top="0.03" height="0.22" rotation="0 0 -90" color="#3a2514"></a-cone>
+      </a-entity>
+
+      <a-entity
+        id="bellowsHotspot"
+        class="clickable"
+        position="0 0.55 -3.4"
+        geometry="primitive: box; width: 1.25; height: 0.9; depth: 0.8"
+        material="transparent: true; opacity: 0"
+        bellows-step
+      ></a-entity>
+
+      <a-entity id="heatIndicators" position="0 1.22 -3.4" face-camera>
+        <a-sphere id="heatDot1" position="-0.24 0 0" radius="0.055" color="#3b2a1c"></a-sphere>
+        <a-sphere id="heatDot2" position="0 0 0" radius="0.055" color="#3b2a1c"></a-sphere>
+        <a-sphere id="heatDot3" position="0.24 0 0" radius="0.055" color="#3b2a1c"></a-sphere>
+      </a-entity>
+
+      <a-entity
+        id="furnaceHotspot"
+        class="clickable"
+        position="-1.5 0.45 -5.5"
+        geometry="primitive: cylinder; radius: 0.78; height: 0.82"
+        material="transparent: true; opacity: 0"
+        furnace-step
+      ></a-entity>
+
+      <a-entity
+        id="labelFurnace"
+        position="-1.5 1.42 -5.5"
+        canvas-label="text: 2 加热点火|Click furnace and wait about 5 seconds; width: 2.9; height: 0.62"
+        face-camera
+      ></a-entity>
+
+      <a-entity id="heatingProgress" position="-1.5 1.05 -5.5" face-camera>
+        <a-box width="1.65" height="0.14" depth="0.035" color="#2a1b0f" material="transparent: true; opacity: 0.86"></a-box>
+        <a-box id="heatTargetZone" position="0.31 0 0.02" width="0.31" height="0.13" depth="0.038" color="#20d482" material="transparent: true; opacity: 0.38; emissive: #20d482; emissiveIntensity: 0.8"></a-box>
+        <a-box position="0.47 0 0.026" width="0.025" height="0.18" depth="0.045" color="#ff3b1f" material="emissive: #ff3b1f; emissiveIntensity: 0.7"></a-box>
+        <a-box id="heatingFill" position="-0.78 0 0.025" scale="0.01 1 1" width="1.52" height="0.095" depth="0.04" color="#ff9b26" material="emissive: #ff4a00; emissiveIntensity: 1.8"></a-box>
+        <a-text id="temperatureReadout" value="温度 35%｜偏低：点击风箱" align="center" width="3.4" position="0 0.28 0.04" color="#fff4d2"></a-text>
+        <a-text id="heatHoldReadout" value="绿色温区 62-82%，保持 0.0/5 秒" align="center" width="3.25" position="0 -0.25 0.04" color="#20d482"></a-text>
+      </a-entity>
+
+      <a-entity id="moltenStream" position="-1.08 0.28 -5.35" visible="false">
+        <a-cylinder radius="0.035" height="0.82" rotation="72 0 18" color="#fff0ae" material="emissive: #ff4a00; emissiveIntensity: 3.2; transparent: true; opacity: 0.92"></a-cylinder>
+        <a-sphere position="0.18 -0.35 0.06" radius="0.13" color="#ff8a1c" material="emissive: #ff4a00; emissiveIntensity: 2.6"></a-sphere>
+        <a-light type="point" color="#ff6a00" intensity="2.8" distance="4"></a-light>
+      </a-entity>
+
+      <a-entity
+        id="labelMelt"
+        position="0 2.16 -3.4"
+        canvas-label="text: 铁水流出|When heating finishes, molten iron flows from the furnace; width: 3.1; height: 0.62"
+        face-camera
+      ></a-entity>
+
+      <a-entity
+        id="temperaturePanel"
+        position="-1.5 1.82 -5.5"
+        canvas-label="text: 控温融铁|点击风箱升温，保持绿色温区 5 秒"
+        face-camera
+      ></a-entity>
+
+      <a-entity
+        id="labelBellows"
+        position="0 1.62 -3.4"
+        canvas-label="text: 拉风箱|每次点击升温，温度会自然下降; width: 2.45; height: 0.58"
+        face-camera
+      ></a-entity>
+
+      <a-entity id="rhythmGame" position="0 0 -3.5" visible="false">
+        <a-entity id="rhythmTitle" position="0 3.35 0" canvas-label="text: Practice Mode|Pass 3 levels to earn performance qualification; width: 4.6; height: 0.72" face-camera></a-entity>
+        <a-text id="rhythmHud" value="Level 1 / 3  Time 30  Miss 0 / 3" align="center" width="6.4" position="0 2.78 0" color="#fff4d2" wrap-count="48"></a-text>
+        <a-entity
+          id="performanceStartButton"
+          class="clickable"
+          position="0 1.45 0.08"
+          canvas-label="text: 开始游戏|Start Game; width: 1.7; height: 0.5; background: rgba(42, 25, 12, 0.88); border: #ffe08a"
+          face-camera
+        ></a-entity>
+        <a-entity id="rhythmLanes"></a-entity>
+        <a-entity id="rhythmNotes"></a-entity>
+      </a-entity>
+
+      <a-entity id="audienceGroup" position="7.2 0 -5.6" visible="false">
+        <a-text id="audienceReaction" value="Audience waiting..." align="center" width="5.2" position="0 2.55 0" color="#ffd37a"></a-text>
+      </a-entity>
+
+      <a-entity
+        id="personModelMirror"
+        position="4.8 0 -4.9"
+        rotation="0 24 0"
+        scale="-0.85 0.85 0.85"
+        person-throw-loop="period: 3350; offset: 900; groundY: 0; lean: 6"
+        shadow="cast: true; receive: true"
+        visible="false"
+      >
+        <a-entity id="personPoseRest" gltf-model="#personModel1Asset" shadow="cast: true; receive: true"></a-entity>
+        <a-entity id="personPoseThrow" gltf-model="#personModel2Asset" shadow="cast: true; receive: true"></a-entity>
+      </a-entity>
+
+      <a-entity
+        id="personModel1"
+        position="9.6 0 -4.9"
+        rotation="0 -24 0"
+        scale="0.85 0.85 0.85"
+        person-throw-loop="period: 2950; offset: 0; groundY: 0; lean: 6"
+        shadow="cast: true; receive: true"
+        visible="false"
+      >
+        <a-entity id="personPoseRest" gltf-model="#personModel1Asset" shadow="cast: true; receive: true"></a-entity>
+        <a-entity id="personPoseThrow" gltf-model="#personModel2Asset" shadow="cast: true; receive: true"></a-entity>
+      </a-entity>
+
+      <a-entity
+        id="performanceFurnaceMirror"
+        position="5.32 0 -5.02"
+        rotation="0 18 0"
+        scale="0.36 0.36 0.36"
+        gltf-model="#performanceFurnaceAsset"
+        stand-on-ground="groundY: 0"
+        shadow="cast: true; receive: true"
+        visible="false"
+      >
+        <a-light type="point" position="0 1.08 0" color="#ff6a00" intensity="2.4" distance="2.6" fire-flicker="base: 2.1; range: 0.7; speed: 0.006"></a-light>
+        <a-light type="point" position="-0.08 1.2 0.06" color="#ffd06a" intensity="1.2" distance="1.7" fire-flicker="base: 1; range: 0.45; speed: 0.008"></a-light>
+      </a-entity>
+
+      <a-entity
+        id="performanceFurnace"
+        position="9.08 0 -5.02"
+        rotation="0 -18 0"
+        scale="0.36 0.36 0.36"
+        gltf-model="#performanceFurnaceAsset"
+        stand-on-ground="groundY: 0"
+        shadow="cast: true; receive: true"
+        visible="false"
+      >
+        <a-light type="point" position="0 1.08 0" color="#ff6a00" intensity="2.4" distance="2.6" fire-flicker="base: 2.1; range: 0.7; speed: 0.006"></a-light>
+        <a-light type="point" position="-0.08 1.2 0.06" color="#ffd06a" intensity="1.2" distance="1.7" fire-flicker="base: 1; range: 0.45; speed: 0.008"></a-light>
+      </a-entity>
+
+      <a-entity
+        id="ladle"
+        class="clickable"
+        position="3.6 0.82 -3.4"
+        rotation="0 0 -25"
+        geometry="primitive: box; width: 1.8; height: 0.62; depth: 0.48"
+        material="transparent: true; opacity: 0"
+        pickable
+      >
+        <a-entity gltf-model="#shovelAsset" position="0 0 0" rotation="0 0 -20" scale="0.58 0.58 0.58" shadow="cast: true; receive: true"></a-entity>
+        <a-text id="ladleSmallText" value="取铁碗和拍板" align="center" width="2.8" position="0 0.42 0" color="#ffd37a" visible="false"></a-text>
+      </a-entity>
+
+      <a-entity
+        id="labelLadle"
+        position="3.6 1.68 -3.4"
+        canvas-label="text: 右手拿拍板; width: 3.0; height: 0.66"
+        face-camera
+      ></a-entity>
+
+      <a-entity
+        id="strikeTarget"
+        class="clickable"
+        position="7.2 1.32 -3.4"
+        geometry="primitive: sphere; radius: 0.72"
+        material="transparent: true; opacity: 0"
+        strike-target
+      >
+        <a-torus
+          radius="0.52"
+          radius-tubular="0.012"
+          color="#ffcc72"
+          material="transparent: true; opacity: 0.62; emissive: #ff8a00; emissiveIntensity: 0.7"
+          pulse
+        ></a-torus>
+        <a-sphere
+          radius="0.06"
+          color="#fff1bd"
+          material="emissive: #ff8a00; emissiveIntensity: 1.8"
+        ></a-sphere>
+        <a-text id="targetSmallText" value="拿起后瞄准这里" align="center" width="3" position="0 0.48 0" color="#fff1bd"></a-text>
+      </a-entity>
+
+      <a-entity
+        id="labelStrike"
+        position="7.2 2.18 -3.4"
+        canvas-label="text: 5 打铁花|Pour with left hand, slap open with right hand; width: 3.0; height: 0.66"
+        face-camera
+      ></a-entity>
+
+      <a-entity id="fireworks"></a-entity>
+
+      <a-entity
+        id="labelMove"
+        position="0 1.18 0.65"
+        canvas-label="text: 移动探索 / Move freely|Pico 摇杆移动，电脑用 WASD; width: 2.75; height: 0.58"
+        face-camera
+      ></a-entity>
+
+      <a-entity
+        id="languageSwitch"
+        class="clickable"
+        position="1.72 1.92 0.42"
+        geometry="primitive: box; width: 1.08; height: 0.38; depth: 0.08"
+        material="color: #1b1308; transparent: true; opacity: 0.86; emissive: #3a2108; emissiveIntensity: 0.25"
+        face-camera
+        language-switch
+      >
+        <a-plane
+          position="0 0 0.045"
+          width="1.08"
+          height="0.38"
+          color="#1b1308"
+          material="transparent: true; opacity: 0.88; side: double"
+        ></a-plane>
+        <a-ring position="0 0 0.052" radius-inner="0.51" radius-outer="0.525" color="#ffbd42" material="transparent: true; opacity: 0.8"></a-ring>
+        <a-text
+          id="languageSwitchText"
+          value="English"
+          align="center"
+          baseline="center"
+          width="2.25"
+          position="0 0.055 0.062"
+          color="#fff4d2"
+        ></a-text>
+        <a-text
+          id="languageSwitchHint"
+          value="Language"
+          align="center"
+          baseline="center"
+          width="2.1"
+          position="0 -0.105 0.062"
+          color="#ffbd42"
+        ></a-text>
+      </a-entity>
+
+      <a-entity id="rig" position="0 0 1.8" pico-thumbstick-move="speed: 1.8; turnSpeed: 90">
+        <a-camera
+          id="mainCamera"
+          position="0 1.6 0"
+          wasd-controls="enabled: true; acceleration: 18"
+          look-controls="enabled: true; magicWindowTrackingEnabled: true; pointerLockEnabled: false"
+        >
+          <a-cursor
+            raycaster="objects: .clickable"
+            cursor="fuse: false"
+            color="#ffd37a"
+            geometry="primitive: ring; radiusInner: 0.012; radiusOuter: 0.019"
+          ></a-cursor>
+        <a-entity id="heldAnchor" position="0.35 -0.28 -0.72" rotation="0 0 -18"></a-entity>
+        </a-camera>
+
+        <a-entity
+          id="leftHand"
+          laser-controls="hand: left"
+          raycaster="objects: .clickable"
+          cursor="rayOrigin: entity; fuse: false"
+          line="color: #2bd4ff; opacity: 0.45"
+        >
+          <a-entity id="leftBowlAnchor" position="0 -0.04 -0.2" rotation="-18 0 8"></a-entity>
+        </a-entity>
+
+        <a-entity
+          id="rightHand"
+          laser-controls="hand: right"
+          raycaster="objects: .clickable"
+          cursor="rayOrigin: entity; fuse: false"
+          line="color: #ffb13d; opacity: 0.85"
+        >
+          <a-entity id="handHeldAnchor" position="0 -0.05 -0.24" rotation="-18 0 -10"></a-entity>
+        </a-entity>
+      </a-entity>
+
+      <a-text
+        id="statusText"
+        value="三步流程：选材料入炉 → 加热点火 → 表演场打铁花"
+        align="center"
+        width="4.3"
+        position="0 2.45 -3.2"
+        color="#fff0c2"
+      ></a-text>
+
+      <a-light type="ambient" color="#404060" intensity="1.15"></a-light>
+      <a-light type="directional" color="#fff2d0" intensity="1.35" position="3 6 2" castShadow="true"></a-light>
+      <a-light type="point" color="#ff9b26" intensity="1.15" distance="12" position="0 2.6 -4.6"></a-light>
+    </a-scene>
+
+    <script>
+      var pageScene = document.body.dataset.scene || "materials";
+      var pageQuery = new URLSearchParams(window.location.search);
+      var storyMode = pageQuery.get("story") === "1";
+      var sceneShell = {
+        materials: {
+          title: "准备素材",
+          button: "Start Prepare",
+          hint: "选择材料、控温融铁 / Prepare materials",
+        },
+        practice: {
+          title: "练习场景",
+          button: "Start Practice",
+          hint: "完成三关练习 / Practice levels",
+        },
+        performance: {
+          title: "表演场景",
+          button: "Start Show",
+          hint: "正式打铁花表演 / Performance",
+        },
+      };
+
+      function sceneHref(file) {
+        return "./" + file + (storyMode ? "?story=1" : "?mode=level");
+      }
+
+      function goToScene(file) {
+        window.location.href = sceneHref(file);
+      }
+
+      function applySceneShell() {
+        var shell = sceneShell[pageScene] || sceneShell.materials;
+        document.title = shell.title + "｜铜官窑打铁花 VR 体验";
+        document.querySelector(".start-title").textContent = shell.title;
+        document.querySelector("#startButton").textContent = shell.button;
+        document.querySelector(".start-hint").textContent = shell.hint;
+      }
+
+      function setInitialScenePreview() {
+        if (pageScene === "practice") {
+          materialSelectionComplete = true;
+          furnacePrepared = true;
+          moltenIronReady = true;
+          setSceneStep(2);
+          setStatus("练习场景：点击开始后进入三关节奏练习", "Practice scene: click start to enter the three rhythm levels");
+          return;
+        }
+        if (pageScene === "performance") {
+          materialSelectionComplete = true;
+          furnacePrepared = true;
+          moltenIronReady = true;
+          setSceneStep(3);
+          updateAudienceReaction();
+          setStatus("表演场景：点击开始后进入正式打铁花表演", "Performance scene: click start to enter the final Iron Flower show");
+          return;
+        }
+        setSceneStep(1);
+        setStatus("步骤 1：点击材料查看说明，确认后加入熔炉。正确材料：稻草卷、铁炭、生铁片、黄铜、食盐", "Step 1: Click materials to read their function, then confirm to add. Correct: Straw Rolls, Charcoal, Pig Iron, Brass, Salt");
+      }
+
+      var hasLadle = false;
+      var selectedMaterials = {};
+      var materialSelectionComplete = false;
+      var furnacePrepared = false;
+      var heatingActive = false;
+      var heatingStart = 0;
+      var heatTemperature = 0;
+      var heatHoldTime = 0;
+      var heatLastTick = 0;
+      var heatMin = 62;
+      var heatMax = 82;
+      var lastHeatingEmber = 0;
+      var bellowsPulls = 0;
+      var moltenIronReady = false;
+      var ladleLoaded = false;
+      var lowerStickAdded = false;
+      var currentLanguage = "zh";
+      var lastLanguageToggle = 0;
+      var currentSceneStep = 1;
+      var gameStarted = false;
+      var performanceRoundStarted = false;
+      var rhythmActive = false;
+      var rhythmMode = "practice";
+      var rhythmLevel = 1;
+      var rhythmStart = 0;
+      var rhythmLastSpawn = 0;
+      var rhythmFallbackLane = 0;
+      var performanceSpawnGap = 850;
+      var rhythmNotes = [];
+      var rhythmMisses = 0;
+      var rhythmScore = 0;
+      var rhythmEnded = false;
+      var rhythmConfigs = [
+        { lanes: 3, speed: 1.05, spawn: 980, duration: 30000 },
+        { lanes: 4, speed: 1.38, spawn: 820, duration: 30000 },
+        { lanes: 5, speed: 1.72, spawn: 660, duration: 30000 },
+      ];
+
+      var stagedSceneIds = [
+        "workshopBackdrop",
+        "performanceBackdrop",
+        "pathGuides",
+        "materialSelection",
+        "materialProgress",
+        "labelMaterials",
+        "furnace",
+        "materialPrep",
+        "furnaceHotspot",
+        "labelFurnace",
+        "heatingProgress",
+        "moltenStream",
+        "temperaturePanel",
+        "bellows",
+        "bellowsHotspot",
+        "heatIndicators",
+        "labelMelt",
+        "labelBellows",
+        "rhythmGame",
+        "performanceStartButton",
+        "audienceGroup",
+        "personModelMirror",
+        "personModel1",
+        "performanceFurnaceMirror",
+        "performanceFurnace",
+        "ladle",
+        "labelLadle",
+        "strikeTarget",
+        "labelStrike",
+      ];
+
+      var sceneSteps = {
+        1: ["workshopBackdrop", "materialSelection", "materialProgress", "labelMaterials", "furnace", "materialPrep", "bellows", "bellowsHotspot", "heatingProgress", "temperaturePanel", "labelBellows", "moltenStream"],
+        2: ["performanceBackdrop", "rhythmGame"],
+        3: ["performanceBackdrop", "rhythmGame", "performanceStartButton", "audienceGroup", "personModelMirror", "personModel1", "performanceFurnaceMirror", "performanceFurnace", "ladle", "labelLadle"],
+      };
+
+
+      var sceneLayout = {
+        materialsX: -5.0,
+        materialsZ: -1.8,
+        furnaceX: -1.5,
+        furnaceZ: -5.5,
+        viewX: -5.0,
+      };
+
+      var sceneStepX = {
+        1: -5.0,
+        2: 0,
+        3: 7.2,
+      };
+
+      var uiText = {
+        zh: {
+          toggle: "English",
+          title: "铜官窑·打铁花",
+          intro: "三步体验：选择材料加入炉中、加热点火等待铁水流出、进入表演场景用双手工具打铁花。",
+          ladleSmall: "取铁碗和拍板",
+          targetSmall: "瞄准这里泼拍",
+          languageHint: "语言切换",
+          choiceYes: "加入熔炉",
+          choiceNo: "取消",
+          labels: {
+            labelMaterials: "步骤1：了解材料信息并选择正确材料入炉|待加入：稻草卷、铁炭、生铁片、黄铜、食盐",
+            labelFurnace: "2 加热点火|点击炉子后等待约 5 秒，进度满后铁水流出",
+            labelMelt: "铁水流出|铁水已从炉中流出，下一步进入表演场",
+            labelBellows: "拉风箱|点击/扳机拉动 3 次，热度满格后融铁",
+            labelLadle: "右手拿拍板",
+            labelStrike: "打铁花|左手泼出铁水，右手拍开形成散射",
+            labelMove: "三步流程|Pico 摇杆移动，电脑用 WASD",
+          },
+        },
+        en: {
+          toggle: "中文",
+          title: "Tongguan Kiln Iron Flower",
+          intro: "Three-step experience: select materials into the furnace, heat and wait for molten iron, then enter the performance scene and strike Iron Flower.",
+          ladleSmall: "Pick up bowl and paddle",
+          targetSmall: "Aim here to pour and slap",
+          languageHint: "Language",
+          choiceYes: "Add to Furnace",
+          choiceNo: "Cancel",
+          labels: {
+            labelMaterials: "Step 1: Learn materials and add correct ones|Required: Straw Rolls, Charcoal, Pig Iron, Brass, Salt",
+            labelFurnace: "2 Heat & Ignite|Click the furnace and wait about 5 seconds",
+            labelMelt: "Molten Iron Flows|When heating finishes, molten iron flows from the furnace",
+            labelBellows: "Pull Bellows|Click or trigger 3 pulls until heat is full",
+            labelLadle: "Right hand holds paddle",
+            labelStrike: "Perform Iron Flower|Pour with left hand, slap open with right hand",
+            labelMove: "Three-Step Flow|Use Pico joystick, or WASD on desktop",
+          },
+        },
+      };
+
+
+      var materialInfo = {
+        crucible: {
+          zh: { name: "煨子", desc: "放置在熔炉中央，用来盛装铁片并承受高温，使铁片熔化成铁水。" },
+          en: { name: "Crucible", desc: "Placed in the center of the furnace to hold iron pieces and withstand high heat until they melt." },
+        },
+        tongs: {
+          zh: { name: "铁钳", desc: "用于夹持勺子或高温器具，辅助表演者安全、稳定地操作铁水。" },
+          en: { name: "Iron Tongs", desc: "Used to hold ladles or hot tools, helping performers handle molten iron safely and steadily." },
+        },
+        ladle: {
+          zh: { name: "勺子", desc: "用于从煨子中舀取铁水，并将铁水抛洒到空中，是连接熔炉与表演动作的关键工具。" },
+          en: { name: "Ladle", desc: "Scoops molten iron from the crucible and throws it into the air, linking the furnace process with the performance action." },
+        },
+        paddle: {
+          zh: { name: "木板", desc: "用来击打抛出的铁水，使铁水在空中散开并形成铁花效果。" },
+          en: { name: "Wooden Paddle", desc: "Strikes the thrown molten iron, scattering it in the air to create the iron flower effect." },
+        },
+        clay: {
+          zh: { name: "高岭土", desc: "用于制作煨子和勺子，耐高温且较稳定，不易与铁水发生反应。" },
+          en: { name: "Kaolin Clay", desc: "Used to make crucibles and ladles; it resists high temperatures and remains stable with molten iron." },
+        },
+        salt: {
+          zh: { name: "食盐", desc: "加入铁水中可增强铁水流动性，使铁花更容易散开，提升视觉效果。" },
+          en: { name: "Salt", desc: "Added to molten iron to improve fluidity, helping the sparks spread more widely and look brighter." },
+        },
+        rawIron: {
+          zh: { name: "生铁片", desc: "制作铁水的主要原料，经高温熔化后形成可用于打铁花的铁水。" },
+          en: { name: "Pig Iron Pieces", desc: "The main raw material for molten iron; it melts at high temperature and becomes the base of the performance." },
+        },
+        brass: {
+          zh: { name: "黄铜", desc: "加入铁水中可改变铁花颜色，使火花呈现偏红或更丰富的色彩。" },
+          en: { name: "Brass", desc: "Added to molten iron to change spark color, often creating warmer or reddish tones." },
+        },
+        straw: {
+          zh: { name: "稻草卷", desc: "用于引火，放在煨子周围帮助点燃燃料，使炉内温度逐步升高。" },
+          en: { name: "Straw Rolls", desc: "Used as kindling around the crucible to ignite the fuel and help raise the furnace temperature." },
+        },
+        charcoal: {
+          zh: { name: "铁炭", desc: "作为燃料燃烧供热，将生铁片加热并熔化成可击打的铁水。" },
+          en: { name: "Fuel Coal / Charcoal", desc: "Burns as fuel to provide heat, melting pig iron pieces into molten iron for striking." },
+        },
+        furnace: {
+          zh: { name: "熔炉", desc: "用于熔化铁片，是打铁花表演中产生铁水的核心设备。" },
+          en: { name: "Furnace", desc: "Melts iron pieces into molten iron; it is the core equipment of the iron flower performance." },
+        },
+      };
+
+      var currentStatus = {
+        zh: "三步流程：选材料入炉 → 加热点火 → 表演场打铁花",
+        en: "Three-step flow: materials into furnace -> heat and ignite -> perform Iron Flower.",
+      };
+
+      function setStatus(zh, en) {
+        currentStatus = { zh: zh, en: en || zh };
+        var statusText = document.querySelector("#statusText");
+        if (statusText) statusText.setAttribute("value", currentStatus[currentLanguage]);
+      }
+
+      function applyLanguage() {
+        var text = uiText[currentLanguage];
+        document.documentElement.lang = currentLanguage === "zh" ? "zh-CN" : "en";
+        document.querySelector("#langToggle").textContent = text.toggle;
+        document.querySelector("#overlayTitle").textContent = text.title;
+        document.querySelector("#overlayIntro").textContent = text.intro;
+        document.querySelector("#ladleSmallText").setAttribute("value", text.ladleSmall);
+        document.querySelector("#targetSmallText").setAttribute("value", text.targetSmall);
+        document.querySelector("#statusText").setAttribute("value", currentStatus[currentLanguage]);
+        document.querySelector("#languageSwitchText").setAttribute("value", text.toggle);
+        document.querySelector("#languageSwitchHint").setAttribute("value", text.languageHint);
+
+        refreshChoicePanelLanguage();
+
+        Object.keys(text.labels).forEach(function (id) {
+          var label = document.querySelector("#" + id);
+          if (!label) return;
+          var attr = label.getAttribute("canvas-label") || {};
+          var width = attr.width || 2.85;
+          var height = attr.height || 0.66;
+          label.setAttribute("canvas-label", "text: " + text.labels[id] + "; width: " + width + "; height: " + height);
+        });
+      }
+
+      function toggleLanguage() {
+        var now = performance.now();
+        if (now - lastLanguageToggle < 250) return;
+        lastLanguageToggle = now;
+        currentLanguage = currentLanguage === "zh" ? "en" : "zh";
+        applyLanguage();
+      }
+
+      function startGame() {
+        if (gameStarted) return;
+        gameStarted = true;
+        document.body.classList.add("game-started");
+        if (pageScene === "practice") {
+          materialSelectionComplete = true;
+          furnacePrepared = true;
+          moltenIronReady = true;
+          setSceneStep(2);
+          startPracticeLevel(1);
+          return;
+        }
+        if (pageScene === "performance") {
+          materialSelectionComplete = true;
+          furnacePrepared = true;
+          moltenIronReady = true;
+          setSceneStep(3);
+          startPerformanceShow();
+          return;
+        }
+        setSceneStep(1);
+        setStatus("步骤 1：点击材料查看说明，确认后加入熔炉。正确材料：稻草卷、铁炭、生铁片、黄铜、食盐", "Step 1: Click materials to read their function, then confirm to add. Correct: Straw Rolls, Charcoal, Pig Iron, Brass, Salt");
+      }
+
+      function setSceneStep(step) {
+        currentSceneStep = step;
+
+        stagedSceneIds.forEach(function (id) {
+          var node = document.querySelector("#" + id);
+          if (node) node.setAttribute("visible", "false");
+        });
+
+        (sceneSteps[step] || []).forEach(function (id) {
+          var node = document.querySelector("#" + id);
+          if (node) node.setAttribute("visible", "true");
+        });
+
+        switchEnvironment(step);
+        document.querySelector("#pathGuides").setAttribute("visible", step === 1 ? "true" : "false");
+        document.querySelector("#fireworks").setAttribute("visible", "true");
+        document.querySelector("#labelMove").setAttribute("visible", "true");
+        document.querySelector("#languageSwitch").setAttribute("visible", "true");
+        updateSceneHudPosition(step);
+      }
+
+      function switchEnvironment(step) {
+        var sky = document.querySelector("#environmentSky");
+        var workshopBackdrop = document.querySelector("#workshopBackdrop");
+        var performanceBackdrop = document.querySelector("#performanceBackdrop");
+        if (!sky) return;
+
+        if (step === 1) {
+          sky.setAttribute("src", "#workshopBg");
+          sky.setAttribute("rotation", "0 -88 0");
+          if (workshopBackdrop) workshopBackdrop.setAttribute("visible", "true");
+          if (performanceBackdrop) performanceBackdrop.setAttribute("visible", "false");
+        } else {
+          sky.setAttribute("src", "#performanceBg");
+          sky.setAttribute("rotation", "0 -82 0");
+          if (workshopBackdrop) workshopBackdrop.setAttribute("visible", "false");
+          if (performanceBackdrop) performanceBackdrop.setAttribute("visible", "true");
+        }
+      }
+
+      function updateSceneHudPosition(step) {
+        var x = sceneStepX[step] || 0;
+        var rig = document.querySelector("#rig");
+        var statusText = document.querySelector("#statusText");
+        var labelMove = document.querySelector("#labelMove");
+        var languageSwitch = document.querySelector("#languageSwitch");
+
+        if (rig) rig.setAttribute("position", x + " 0 1.8");
+        if (statusText) statusText.setAttribute("position", x + " 2.45 -3.2");
+        if (labelMove) labelMove.setAttribute("position", x + " 1.18 0.65");
+        if (languageSwitch) languageSwitch.setAttribute("position", x + 1.72 + " 1.92 0.42");
+        var rhythmGame = document.querySelector("#rhythmGame");
+        if (rhythmGame) rhythmGame.setAttribute("position", x + " 0 -3.5");
+      }
+
+      AFRAME.registerComponent("canvas-label", {
+        schema: {
+          text: { default: "" },
+          width: { default: 2.4 },
+          height: { default: 0.58 },
+          background: { default: "rgba(18, 10, 4, 0.72)" },
+          border: { default: "#ffbd42" },
+          color: { default: "#fff4d2" },
+        },
+
+        init: function () {
+          this.drawLabel();
+        },
+
+        update: function () {
+          this.drawLabel();
+        },
+
+        drawLabel: function () {
+          var canvas = document.createElement("canvas");
+          var context = canvas.getContext("2d");
+          var scale = 3;
+          canvas.width = Math.round(720 * scale);
+          canvas.height = Math.round(220 * scale);
+
+          context.scale(scale, scale);
+          this.roundRect(context, 0, 0, 720, 220, 28, this.data.background, this.data.border);
+
+          var lines = this.data.text.split("|");
+          context.textAlign = "center";
+          context.textBaseline = "middle";
+          context.fillStyle = this.data.color;
+          context.font = "700 40px Arial, PingFang SC, Microsoft YaHei, sans-serif";
+          context.fillText(lines[0] || "", 360, lines[1] ? 58 : 110, 640);
+
+          if (lines[1]) {
+            context.fillStyle = "#ffd37a";
+            context.font = "400 26px Arial, PingFang SC, Microsoft YaHei, sans-serif";
+            this.wrapText(context, lines[1], 360, 120, 620, 34, 3);
+          }
+
+          var texture = new THREE.CanvasTexture(canvas);
+          texture.needsUpdate = true;
+          texture.minFilter = THREE.LinearFilter;
+
+          if (this.mesh) {
+            this.el.object3D.remove(this.mesh);
+            this.mesh.geometry.dispose();
+            this.mesh.material.map.dispose();
+            this.mesh.material.dispose();
+          }
+
+          var geometry = new THREE.PlaneGeometry(this.data.width, this.data.height);
+          var material = new THREE.MeshBasicMaterial({
+            map: texture,
+            transparent: true,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+          });
+
+          this.mesh = new THREE.Mesh(geometry, material);
+          this.el.object3D.add(this.mesh);
+        },
+
+        wrapText: function (context, text, x, y, maxWidth, lineHeight, maxLines) {
+          var tokens = text.match(/[\u4e00-\u9fff]|[^\s\u4e00-\u9fff]+/g) || [text];
+          var lines = [];
+          var line = "";
+
+          tokens.forEach(function (token) {
+            var separator = /[\u4e00-\u9fff]/.test(token) ? "" : " ";
+            var testLine = line ? line + separator + token : token;
+
+            if (context.measureText(testLine).width > maxWidth && line) {
+              lines.push(line);
+              line = token;
+            } else {
+              line = testLine;
+            }
+          });
+
+          if (line) lines.push(line);
+
+          lines.slice(0, maxLines).forEach(function (lineText, index) {
+            var output = lineText;
+            if (index === maxLines - 1 && lines.length > maxLines) output = lineText.replace(/\s+$/, "") + "...";
+            context.fillText(output, x, y + index * lineHeight, maxWidth);
+          });
+        },
+
+        roundRect: function (context, x, y, width, height, radius, fill, stroke) {
+          context.beginPath();
+          context.moveTo(x + radius, y);
+          context.lineTo(x + width - radius, y);
+          context.quadraticCurveTo(x + width, y, x + width, y + radius);
+          context.lineTo(x + width, y + height - radius);
+          context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+          context.lineTo(x + radius, y + height);
+          context.quadraticCurveTo(x, y + height, x, y + height - radius);
+          context.lineTo(x, y + radius);
+          context.quadraticCurveTo(x, y, x + radius, y);
+          context.closePath();
+          context.fillStyle = fill;
+          context.fill();
+          context.strokeStyle = stroke;
+          context.lineWidth = 4;
+          context.stroke();
+        },
+      });
+
+      AFRAME.registerComponent("face-camera", {
+        tick: function () {
+          var camera = document.querySelector("#mainCamera");
+          if (!camera) return;
+
+          var worldPosition = new THREE.Vector3();
+          camera.object3D.getWorldPosition(worldPosition);
+          this.el.object3D.lookAt(worldPosition);
+        },
+      });
+
+      AFRAME.registerComponent("stand-on-ground", {
+        schema: {
+          groundY: { default: 0 },
+        },
+
+        init: function () {
+          this.placeOnGround = this.placeOnGround.bind(this);
+          this.el.addEventListener("model-loaded", this.placeOnGround);
+        },
+
+        placeOnGround: function () {
+          setTimeout(function () {
+            var box = new THREE.Box3().setFromObject(this.el.object3D);
+            if (!isFinite(box.min.y)) return;
+            this.el.object3D.position.y += this.data.groundY - box.min.y;
+            if (this.el.components["person-throw-loop"]) this.el.components["person-throw-loop"].resetBase();
+          }.bind(this), 0);
+        },
+
+        remove: function () {
+          this.el.removeEventListener("model-loaded", this.placeOnGround);
+        },
+      });
+
+      AFRAME.registerComponent("person-throw-loop", {
+        schema: {
+          period: { default: 2400 },
+          offset: { default: 0 },
+          groundY: { default: 0 },
+          lean: { default: 6 },
+        },
+
+        init: function () {
+          this.rest = this.el.querySelector("#personPoseRest");
+          this.throwPose = this.el.querySelector("#personPoseThrow");
+          this.baseY = this.el.object3D.position.y;
+          this.baseRotationX = this.el.object3D.rotation.x;
+          this.baseRotationZ = this.el.object3D.rotation.z;
+          this.ready = false;
+          this.stopped = false;
+          this.loadedCount = 0;
+          this.phase = 0;
+          this.progress = 0;
+          this.lastReleaseCycle = -1;
+          this.onModelLoaded = function () {
+            this.loadedCount += 1;
+            this.setPoseOpacity(this.rest, 1);
+            this.setPoseOpacity(this.throwPose, 0);
+            if (this.loadedCount >= 2) {
+              this.alignPoseFeet();
+              this.placeGroupOnGround();
+              this.resetBase();
+              this.ready = true;
+            }
+          }.bind(this);
+
+          if (this.rest) this.rest.addEventListener("model-loaded", this.onModelLoaded);
+          if (this.throwPose) this.throwPose.addEventListener("model-loaded", this.onModelLoaded);
+          this.setPoseOpacity(this.rest, 1);
+          this.setPoseOpacity(this.throwPose, 0);
+        },
+
+        resetBase: function () {
+          this.baseY = this.el.object3D.position.y;
+          this.baseRotationX = this.el.object3D.rotation.x;
+          this.baseRotationZ = this.el.object3D.rotation.z;
+        },
+
+        tick: function (time) {
+          if (!this.rest || !this.throwPose) return;
+          if (!this.ready) return;
+          if (this.stopped) return;
+          if (rhythmMode === "performance" && !performanceRoundStarted) return;
+          var shiftedTime = time + this.data.offset;
+          var phase = (shiftedTime % this.data.period) / this.data.period;
+          var raw = phase < 0.5 ? phase * 2 : (1 - phase) * 2;
+          var progress = this.easeInOut(raw);
+          this.phase = phase;
+          this.progress = progress;
+          this.cycle = Math.floor(shiftedTime / this.data.period);
+
+          this.setPoseOpacity(this.rest, 1 - progress);
+          this.setPoseOpacity(this.throwPose, progress);
+          this.el.object3D.position.y = this.baseY;
+          this.el.object3D.rotation.x = this.baseRotationX + THREE.MathUtils.degToRad(-this.data.lean * progress);
+          this.el.object3D.rotation.z = this.baseRotationZ + THREE.MathUtils.degToRad(2 * progress);
+        },
+
+        easeInOut: function (value) {
+          return value < 0.5 ? 4 * value * value * value : 1 - Math.pow(-2 * value + 2, 3) / 2;
+        },
+
+        canReleaseThrow: function () {
+          if (!this.ready || this.stopped) return false;
+          var throwPoseVisible = this.phase >= 0.28 && this.phase <= 0.46 && this.progress >= 0.42;
+          if (!throwPoseVisible || this.lastReleaseCycle === this.cycle) return false;
+          return true;
+        },
+
+        markThrowReleased: function () {
+          this.lastReleaseCycle = this.cycle;
+        },
+
+        shouldReleaseThrow: function () {
+          if (!this.canReleaseThrow()) return false;
+          this.markThrowReleased();
+          return true;
+        },
+
+        stopAtRest: function () {
+          this.stopped = true;
+          this.progress = 0;
+          this.setPoseOpacity(this.rest, 1);
+          this.setPoseOpacity(this.throwPose, 0);
+          this.el.object3D.position.y = this.baseY;
+          this.el.object3D.rotation.x = this.baseRotationX;
+          this.el.object3D.rotation.z = this.baseRotationZ;
+        },
+
+        alignPoseFeet: function () {
+          this.alignPoseToFootPoint(this.rest);
+          this.alignPoseToFootPoint(this.throwPose);
+        },
+
+        placeGroupOnGround: function () {
+          var box = new THREE.Box3().setFromObject(this.el.object3D);
+          if (!isFinite(box.min.y)) return;
+          this.el.object3D.position.y += this.data.groundY - box.min.y;
+        },
+
+        alignPoseToFootPoint: function (pose) {
+          if (!pose) return;
+          if (pose.dataset.feetAligned === "true") return;
+          var box = new THREE.Box3().setFromObject(pose.object3D);
+          if (!isFinite(box.min.y)) return;
+
+          var footCenter = new THREE.Vector3(
+            (box.min.x + box.max.x) / 2,
+            box.min.y,
+            (box.min.z + box.max.z) / 2
+          );
+          var localFootCenter = this.el.object3D.worldToLocal(footCenter.clone());
+          pose.object3D.position.x -= localFootCenter.x;
+          pose.object3D.position.y -= localFootCenter.y;
+          pose.object3D.position.z -= localFootCenter.z;
+          pose.dataset.feetAligned = "true";
+        },
+
+        setPoseOpacity: function (pose, opacity) {
+          if (!pose) return;
+          pose.object3D.traverse(function (node) {
+            if (!node.isMesh || !node.material) return;
+            var materials = Array.isArray(node.material) ? node.material : [node.material];
+            materials.forEach(function (material, index) {
+              if (!material.userData.opacityClone) {
+                var cloned = material.clone();
+                cloned.userData.opacityClone = true;
+                if (Array.isArray(node.material)) node.material[index] = cloned;
+                else node.material = cloned;
+                material = cloned;
+              }
+              material.transparent = true;
+              material.opacity = opacity;
+              material.depthWrite = opacity > 0.98;
+              material.needsUpdate = true;
+            });
+          });
+        },
+
+        remove: function () {
+          if (this.rest) this.rest.removeEventListener("model-loaded", this.onModelLoaded);
+          if (this.throwPose) this.throwPose.removeEventListener("model-loaded", this.onModelLoaded);
+        },
+      });
+
+      AFRAME.registerComponent("manual-interaction", {
+        init: function () {
+          this.raycaster = new THREE.Raycaster();
+          this.mouse = new THREE.Vector2();
+          this.lastSelect = 0;
+          this.bindInput = this.bindInput.bind(this);
+
+          if (this.el.canvas) {
+            this.bindInput();
+          } else {
+            this.el.addEventListener("render-target-loaded", this.bindInput);
+          }
+        },
+
+        bindInput: function () {
+          var canvas = this.el.canvas;
+          var rightHand = document.querySelector("#rightHand");
+
+          canvas.addEventListener("click", this.selectFromMouse.bind(this));
+          canvas.addEventListener("pointerdown", this.selectFromMouse.bind(this));
+
+          document.addEventListener("keydown", function (event) {
+            if (event.code === "Space" || event.code === "Enter") {
+              this.selectFromCenter();
+            }
+          }.bind(this));
+
+          if (rightHand) {
+            ["triggerdown", "gripdown", "abuttondown", "bbuttondown", "selectstart"].forEach(function (eventName) {
+              rightHand.addEventListener(eventName, this.selectFromHand.bind(this));
+            }.bind(this));
+          }
+        },
+
+        selectFromMouse: function (event) {
+          if (!this.canSelect()) return;
+          var rect = this.el.canvas.getBoundingClientRect();
+          this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+          this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+          this.raycaster.setFromCamera(this.mouse, this.el.camera);
+          this.activateFirstHit();
+        },
+
+        selectFromCenter: function () {
+          if (!this.canSelect()) return;
+          this.raycaster.setFromCamera(new THREE.Vector2(0, 0), this.el.camera);
+          this.activateFirstHit();
+        },
+
+        selectFromHand: function () {
+          if (!this.canSelect()) return;
+          var rightHand = document.querySelector("#rightHand");
+          if (!rightHand) return;
+
+          var origin = new THREE.Vector3();
+          var direction = new THREE.Vector3(0, 0, -1);
+          rightHand.object3D.getWorldPosition(origin);
+          direction.applyQuaternion(rightHand.object3D.getWorldQuaternion(new THREE.Quaternion()));
+          this.raycaster.set(origin, direction);
+          this.activateFirstHit();
+        },
+
+        canSelect: function () {
+          if (!gameStarted) return false;
+          var now = performance.now();
+          if (now - this.lastSelect < 220) return false;
+          this.lastSelect = now;
+          return true;
+        },
+
+        activateFirstHit: function () {
+          var objects = Array.from(document.querySelectorAll(".clickable"))
+            .filter(this.isWorldVisible)
+            .map(function (el) {
+              return el.object3D;
+            });
+          var hits = this.raycaster.intersectObjects(objects, true);
+          if (!hits.length) return;
+
+          var target = this.findClickableElement(hits[0].object);
+          if (!target) return;
+
+          if (target.id === "vrChoiceYes") {
+            confirmChoice();
+            return;
+          }
+
+          if (target.id === "vrChoiceNo") {
+            closeChoicePanel();
+            return;
+          }
+
+          if (target.id === "furnaceHotspot") {
+            prepareMoltenIron();
+          }
+
+          if (target.components && target.components["material-choice"]) {
+            chooseMaterial(target);
+          }
+
+          if (target.id === "bellowsHotspot") {
+            pullBellows();
+          }
+
+          if (target.id === "ladle") {
+            toggleToolsAtStation();
+        }
+
+          if (target.id === "performanceStartButton") {
+            startPerformanceRound();
+          }
+
+          if (target.id === "languageSwitch") {
+            toggleLanguage();
+          }
+
+          if (target.dataset && target.dataset.laneIndex) {
+            hitRhythmLane(Number(target.dataset.laneIndex));
+          }
+        },
+
+        isWorldVisible: function (el) {
+          var current = el;
+          while (current) {
+            if (current.object3D && current.object3D.visible === false) return false;
+            current = current.parentElement;
+          }
+          return true;
+        },
+
+        findClickableElement: function (object3D) {
+          var current = object3D;
+          while (current) {
+            if (current.el && current.el.classList && current.el.classList.contains("clickable")) {
+              return current.el;
+            }
+            current = current.parent;
+          }
+          return null;
+        },
+      });
+
+      AFRAME.registerComponent("pico-thumbstick-move", {
+        schema: {
+          speed: { default: 1.8 },
+          turnSpeed: { default: 90 },
+          deadzone: { default: 0.18 },
+        },
+
+        init: function () {
+          this.move = new THREE.Vector3();
+          this.forward = new THREE.Vector3();
+          this.right = new THREE.Vector3();
+          this.camera = document.querySelector("#mainCamera");
+          this.eventInput = { moveX: 0, moveY: 0, turnX: 0, time: 0 };
+          this.attachAxisEvents();
+        },
+
+        tick: function (time, delta) {
+          var gamepadInput = this.readGamepadAxes();
+          if (!gamepadInput) return;
+
+          var dt = Math.min(delta / 1000, 0.05);
+          var moveX = this.applyDeadzone(gamepadInput.moveX);
+          var moveY = this.applyDeadzone(gamepadInput.moveY);
+          var turnX = this.applyDeadzone(gamepadInput.turnX);
+
+          if (Math.abs(moveX) > 0 || Math.abs(moveY) > 0) {
+            this.moveRig(moveX, moveY, dt);
+          }
+
+          if (Math.abs(turnX) > 0) {
+            this.el.object3D.rotation.y -= THREE.MathUtils.degToRad(turnX * this.data.turnSpeed * dt);
+          }
+        },
+
+        readGamepadAxes: function () {
+          return this.readWebXRAxes() || this.readNavigatorAxes() || this.readRecentAxisEvent();
+        },
+
+        readWebXRAxes: function () {
+          var renderer = this.el.sceneEl && this.el.sceneEl.renderer;
+          var xr = renderer && renderer.xr;
+          var session = xr && xr.getSession ? xr.getSession() : null;
+          if (!session || !session.inputSources) return null;
+
+          var leftMove = null;
+          var rightMove = null;
+          var fallbackMove = null;
+
+          Array.from(session.inputSources).forEach(function (source) {
+            if (!source || !source.gamepad || !source.gamepad.axes) return;
+
+            var pair = this.findPrimaryAxisPair(source.gamepad.axes);
+            if (!pair) return;
+
+            if (source.handedness === "left") {
+              leftMove = pair;
+            } else if (source.handedness === "right") {
+              rightMove = pair;
+            }
+
+            if (!fallbackMove || pair.strength > fallbackMove.strength) {
+              fallbackMove = pair;
+            }
+          }.bind(this));
+
+          if (!leftMove && !rightMove && !fallbackMove) return null;
+
+          var move = leftMove || fallbackMove || rightMove;
+          var turnX = leftMove && rightMove ? rightMove.x : 0;
+
+          return {
+            moveX: move.x,
+            moveY: move.y,
+            turnX: turnX,
+          };
+        },
+
+        readNavigatorAxes: function () {
+          var pads = navigator.getGamepads ? navigator.getGamepads() : [];
+          var bestMove = null;
+          var bestTurn = 0;
+
+          for (var i = 0; i < pads.length; i += 1) {
+            var pad = pads[i];
+            if (!pad || !pad.axes || pad.axes.length < 2) continue;
+
+            var pair = this.findPrimaryAxisPair(pad.axes);
+            if (!pair) continue;
+
+            if (!bestMove || pair.strength > bestMove.strength) {
+              bestMove = pair;
+            } else if (Math.abs(pair.x) > Math.abs(bestTurn)) {
+              bestTurn = pair.x;
+            }
+          }
+
+          if (!bestMove) return null;
+
+          return {
+            moveX: bestMove.x,
+            moveY: bestMove.y,
+            turnX: bestTurn,
+          };
+        },
+
+        readRecentAxisEvent: function () {
+          if (performance.now() - this.eventInput.time > 350) return null;
+          return {
+            moveX: this.eventInput.moveX,
+            moveY: this.eventInput.moveY,
+            turnX: this.eventInput.turnX,
+          };
+        },
+
+        attachAxisEvents: function () {
+          var leftHand = document.querySelector("#leftHand");
+          var rightHand = document.querySelector("#rightHand");
+          var events = ["axismove", "thumbstickmoved", "trackpadmoved"];
+
+          if (leftHand) {
+            events.forEach(function (eventName) {
+              leftHand.addEventListener(eventName, function (event) {
+                var pair = this.axisPairFromEvent(event);
+                if (!pair) return;
+                this.eventInput.moveX = pair.x;
+                this.eventInput.moveY = pair.y;
+                this.eventInput.time = performance.now();
+              }.bind(this));
+            }.bind(this));
+          }
+
+          if (rightHand) {
+            events.forEach(function (eventName) {
+              rightHand.addEventListener(eventName, function (event) {
+                var pair = this.axisPairFromEvent(event);
+                if (!pair) return;
+                this.eventInput.moveX = pair.x;
+                this.eventInput.moveY = pair.y;
+                this.eventInput.turnX = 0;
+                this.eventInput.time = performance.now();
+              }.bind(this));
+            }.bind(this));
+          }
+        },
+
+        axisPairFromEvent: function (event) {
+          var detail = event.detail || {};
+
+          if (typeof detail.x === "number" && typeof detail.y === "number") {
+            return { x: detail.x, y: detail.y, strength: Math.sqrt(detail.x * detail.x + detail.y * detail.y) };
+          }
+
+          if (detail.axis && detail.axis.length >= 2) {
+            return this.findPrimaryAxisPair(detail.axis);
+          }
+
+          if (detail.axes && detail.axes.length >= 2) {
+            return this.findPrimaryAxisPair(detail.axes);
+          }
+
+          return null;
+        },
+
+        findPrimaryAxisPair: function (axes) {
+          if (!axes || axes.length < 2) return null;
+
+          var candidates = [];
+
+          if (axes.length >= 4) {
+            candidates.push({ x: axes[2] || 0, y: axes[3] || 0, priority: 2 });
+          }
+
+          candidates.push({ x: axes[0] || 0, y: axes[1] || 0, priority: 1 });
+
+          for (var i = 0; i < axes.length - 1; i += 2) {
+            candidates.push({ x: axes[i] || 0, y: axes[i + 1] || 0, priority: 0 });
+          }
+
+          var best = null;
+          candidates.forEach(function (candidate) {
+            var strength = Math.sqrt(candidate.x * candidate.x + candidate.y * candidate.y);
+            candidate.strength = strength;
+
+            if (strength <= this.data.deadzone) return;
+            if (!best || candidate.priority > best.priority || strength > best.strength + 0.12) {
+              best = candidate;
+            }
+          }.bind(this));
+
+          return best;
+        },
+
+        findStrongestAxisPair: function (axes) {
+          var best = null;
+
+          for (var i = 0; i < axes.length - 1; i += 2) {
+            var x = axes[i] || 0;
+            var y = axes[i + 1] || 0;
+            var strength = Math.sqrt(x * x + y * y);
+
+            if (strength > this.data.deadzone && (!best || strength > best.strength)) {
+              best = { x: x, y: y, strength: strength };
+            }
+          }
+
+          return best;
+        },
+
+        applyDeadzone: function (value) {
+          if (Math.abs(value) < this.data.deadzone) return 0;
+          var sign = value < 0 ? -1 : 1;
+          return sign * ((Math.abs(value) - this.data.deadzone) / (1 - this.data.deadzone));
+        },
+
+        moveRig: function (moveX, moveY, dt) {
+          var yaw = this.getCameraYaw();
+          var distance = this.data.speed * dt;
+          var forwardAmount = -moveY;
+          var rightAmount = -moveX;
+
+          this.forward.set(Math.sin(yaw), 0, Math.cos(yaw));
+          this.right.set(Math.cos(yaw), 0, -Math.sin(yaw));
+          this.move.copy(this.forward).multiplyScalar(forwardAmount);
+          this.move.addScaledVector(this.right, rightAmount);
+
+          if (this.move.lengthSq() > 1) this.move.normalize();
+          this.move.multiplyScalar(distance);
+          this.el.object3D.position.add(this.move);
+        },
+
+        getCameraYaw: function () {
+          if (!this.camera) return this.el.object3D.rotation.y;
+
+          var direction = new THREE.Vector3();
+          this.camera.object3D.getWorldDirection(direction);
+          return Math.atan2(-direction.x, -direction.z);
+        },
+      });
+
+      AFRAME.registerComponent("furnace-step", {
+        init: function () {
+          this.el.addEventListener("click", prepareMoltenIron);
+          this.el.addEventListener("mouseenter", function () {
+            if (!materialSelectionComplete) {
+              setStatus("先选择材料，材料会加入炉中", "Select materials first; they will be added into the furnace");
+            } else if (heatingActive) {
+              setStatus("炉中正在加热点火，请等待进度条完成", "The furnace is heating. Wait for the progress bar to complete");
+            } else if (!moltenIronReady) {
+              setStatus("点击炉子：开始加热点火，等待约 5 秒", "Click the furnace: heat and ignite, then wait about 5 seconds");
+            } else if (hasLadle && !ladleLoaded) {
+              setStatus("铁水已流出：右手铁锹准备打铁花", "Molten iron has flowed out: the right-hand shovel is ready for Iron Flower");
+            } else {
+              setStatus("铁水已经流出，准备进入表演场", "Molten iron has flowed out. Prepare to enter the performance scene");
+            }
+          });
+        },
+      });
+
+      AFRAME.registerComponent("material-choice", {
+        schema: {
+          key: { default: "" },
+          correct: { default: false },
+        },
+
+        init: function () {
+          this.el.addEventListener("click", function () {
+            chooseMaterial(this.el);
+          }.bind(this));
+          this.el.addEventListener("mouseenter", function () {
+            setStatus("点击材料查看说明，确认后加入熔炉", "Click a material to read its function, then confirm to add it");
+          });
+        },
+      });
+
+      AFRAME.registerComponent("bellows-step", {
+        init: function () {
+          this.el.addEventListener("click", pullBellows);
+          this.el.addEventListener("mouseenter", function () {
+            if (!furnacePrepared) {
+              setStatus("先点击炉火完成发炉，再拉风箱", "Prepare the furnace first, then pull the bellows");
+            } else if (!moltenIronReady) {
+              setStatus("拉风箱提高炉温：" + bellowsPulls + "/3", "Pull the bellows to raise heat: " + bellowsPulls + "/3");
+            }
+          });
+        },
+      });
+
+      AFRAME.registerComponent("language-switch", {
+        init: function () {
+          this.el.addEventListener("click", toggleLanguage);
+        },
+      });
+
+      AFRAME.registerComponent("pickable", {
+        init: function () {
+          this.el.addEventListener("click", toggleToolsAtStation);
+          this.el.addEventListener("mouseenter", function () {
+            this.setAttribute("scale", "1.08 1.08 1.08");
+            if (hasLadle) {
+              setStatus("点击工具站：放回右手铁锹", "Click the tool station to return the right-hand shovel");
+            } else if (!moltenIronReady) {
+              setStatus("请先完成材料入炉和加热点火，等铁水流出后再取工具", "Complete materials and heating first; pick up tools after molten iron flows");
+            } else {
+              setStatus("点击工具站：拿起右手铁锹", "Click the tool station: take the right-hand shovel");
+            }
+          });
+          this.el.addEventListener("mouseleave", function () {
+            this.setAttribute("scale", "1 1 1");
+          });
+        },
+      });
+
+      AFRAME.registerComponent("strike-target", {
+        init: function () {
+          this.el.addEventListener("mouseenter", function () {
+            this.setAttribute("scale", hasLadle ? "1.24 1.24 1.24" : "1.08 1.08 1.08");
+            if (!hasLadle) {
+              setStatus("先拿起右手铁锹，再完成打铁花", "Pick up the right-hand shovel before performing Iron Flower");
+            } else {
+              setStatus("正式表演中，等圆圈任意部分进入圆环外径范围后点击圆环打出铁花", "In performance mode, click the ring when any part of the falling circle enters the ring's outer radius");
+            }
+          });
+          this.el.addEventListener("click", function () {
+            setStatus("正式表演中，铁花只会在点击判定圆环命中时出现", "Iron Flower only appears when you hit a judgment ring in performance mode");
+          });
+          this.el.addEventListener("mouseleave", function () {
+            this.setAttribute("scale", "1 1 1");
+          });
+        },
+      });
+
+      AFRAME.registerComponent("pulse", {
+        tick: function (time) {
+          var scale = 1 + Math.sin(time / 260) * 0.06;
+          this.el.object3D.scale.set(scale, scale, scale);
+        },
+      });
+
+      AFRAME.registerComponent("fire-flicker", {
+        schema: {
+          base: { default: 1.4 },
+          range: { default: 0.5 },
+          speed: { default: 0.007 },
+        },
+
+        tick: function (time) {
+          var flicker = Math.sin(time * this.data.speed) * 0.55 + Math.sin(time * this.data.speed * 2.7) * 0.45;
+          this.el.setAttribute("intensity", this.data.base + this.data.range * Math.max(0, flicker));
+        },
+      });
+
+      AFRAME.registerComponent("heating-progress-loop", {
+        tick: function () {
+          updateHeatingProgress();
+          updateRhythmGame();
+        },
+      });
+
+var pendingChoice = null;
+
+      function isVrMode() {
+        var scene = document.querySelector("a-scene");
+        return !!(scene && scene.is("vr-mode"));
+      }
+
+      function refreshChoicePanelLanguage() {
+        if (!pendingChoice) return;
+        var text = uiText[currentLanguage];
+        var titleEl = document.querySelector("#choiceTitle");
+        var bodyEl = document.querySelector("#choiceBody");
+        var yesBtn = document.querySelector("#choiceYes");
+        var noBtn = document.querySelector("#choiceNo");
+        var vrTitle = document.querySelector("#vrChoiceTitle");
+        var vrBody = document.querySelector("#vrChoiceBody");
+        var vrYes = document.querySelector("#vrChoiceYesText");
+        var vrNo = document.querySelector("#vrChoiceNoText");
+
+        if (pendingChoice.kind === "material") {
+          var info = materialInfo[pendingChoice.key];
+          if (info && info[currentLanguage]) {
+            var suffix = pendingChoice.alreadyAdded
+              ? (currentLanguage === "zh" ? "（已加入）" : " (Already added)")
+              : (currentLanguage === "zh" ? " 是否加入熔炉？" : " Add to furnace?");
+            var title = info[currentLanguage].name;
+            var body = info[currentLanguage].desc + suffix;
+            if (titleEl) titleEl.textContent = title;
+            if (bodyEl) bodyEl.textContent = body;
+            if (vrTitle) vrTitle.setAttribute("value", title);
+            if (vrBody) vrBody.setAttribute("value", body);
+          }
+          if (yesBtn) {
+            yesBtn.textContent = pendingChoice.alreadyAdded
+              ? (currentLanguage === "zh" ? "确定" : "OK")
+              : text.choiceYes;
+            yesBtn.style.display = "";
+          }
+          if (noBtn) noBtn.style.display = pendingChoice.alreadyAdded ? "none" : "";
+          if (vrYes) {
+            vrYes.setAttribute("value", pendingChoice.alreadyAdded
+              ? (currentLanguage === "zh" ? "确定" : "OK")
+              : text.choiceYes);
+          }
+        } else if (pendingChoice.kind === "error") {
+          var errTitle = currentLanguage === "zh" ? "材料错误" : "Wrong Material";
+          var errBody = currentLanguage === "zh" ? "材料错误，无法添加" : "Wrong material — cannot be added.";
+          if (titleEl) titleEl.textContent = errTitle;
+          if (bodyEl) bodyEl.textContent = errBody;
+          if (vrTitle) vrTitle.setAttribute("value", errTitle);
+          if (vrBody) vrBody.setAttribute("value", errBody);
+          if (yesBtn) {
+            yesBtn.textContent = currentLanguage === "zh" ? "确定" : "OK";
+            yesBtn.style.display = "";
+          }
+          if (noBtn) noBtn.style.display = "none";
+          if (vrNo) vrNo.parentElement.setAttribute("visible", "false");
+        }
+        if (noBtn && noBtn.style.display !== "none") noBtn.textContent = text.choiceNo;
+        if (vrNo && pendingChoice.kind !== "error") {
+          vrNo.parentElement.setAttribute("visible", "true");
+          vrNo.setAttribute("value", text.choiceNo);
+        }
+      }
+
+      function positionVrChoicePanel(el) {
+        var panel = document.querySelector("#vrChoicePanel");
+        if (!panel || !el) return;
+        var worldPos = new THREE.Vector3();
+        el.object3D.getWorldPosition(worldPos);
+        panel.object3D.position.set(worldPos.x, worldPos.y + 0.05, worldPos.z);
+        panel.setAttribute("visible", "true");
+      }
+
+      function showMaterialChoice(el) {
+        var data = el.components["material-choice"].data;
+        pendingChoice = {
+          kind: "material",
+          el: el,
+          key: data.key,
+          correct: !!data.correct,
+          alreadyAdded: !!selectedMaterials[data.key],
+        };
+        refreshChoicePanelLanguage();
+        if (isVrMode()) {
+          document.body.classList.add("vr-mode");
+          positionVrChoicePanel(el);
+          var htmlPanel = document.querySelector("#choicePanel");
+          if (htmlPanel) htmlPanel.hidden = true;
+        } else {
+          document.body.classList.remove("vr-mode");
+          var panel = document.querySelector("#choicePanel");
+          if (panel) panel.hidden = false;
+          var vrPanel = document.querySelector("#vrChoicePanel");
+          if (vrPanel) vrPanel.setAttribute("visible", "false");
+        }
+      }
+
+      function showErrorPopup() {
+        pendingChoice = { kind: "error" };
+        refreshChoicePanelLanguage();
+        if (isVrMode()) {
+          document.body.classList.add("vr-mode");
+          var panel = document.querySelector("#vrChoicePanel");
+          if (panel) {
+            var rig = document.querySelector("#rig");
+            if (rig) {
+              var pos = new THREE.Vector3();
+              rig.object3D.getWorldPosition(pos);
+              panel.object3D.position.set(pos.x, pos.y + 1.45, pos.z - 0.8);
+            }
+            panel.setAttribute("visible", "true");
+          }
+        } else {
+          var htmlPanel = document.querySelector("#choicePanel");
+          if (htmlPanel) htmlPanel.hidden = false;
+        }
+      }
+
+      function closeChoicePanel() {
+        pendingChoice = null;
+        var panel = document.querySelector("#choicePanel");
+        if (panel) panel.hidden = true;
+        var vrPanel = document.querySelector("#vrChoicePanel");
+        if (vrPanel) vrPanel.setAttribute("visible", "false");
+        var yesBtn = document.querySelector("#choiceYes");
+        var noBtn = document.querySelector("#choiceNo");
+        if (yesBtn) yesBtn.style.display = "";
+        if (noBtn) {
+          noBtn.style.display = "";
+        }
+        var vrNo = document.querySelector("#vrChoiceNo");
+        if (vrNo) vrNo.parentElement.setAttribute("visible", "true");
+      }
+
+      function confirmChoice() {
+        if (!pendingChoice) {
+          closeChoicePanel();
+          return;
+        }
+        if (pendingChoice.kind === "error") {
+          closeChoicePanel();
+          return;
+        }
+        if (pendingChoice.kind === "material") {
+          var el = pendingChoice.el;
+          var key = pendingChoice.key;
+          var correct = pendingChoice.correct;
+          var wasAlreadyAdded = pendingChoice.alreadyAdded;
+          closeChoicePanel();
+          if (wasAlreadyAdded) return;
+          processMaterialChoice(el, key, correct);
+        }
+      }
+
+      function processMaterialChoice(el, key, correct) {
+        if (materialSelectionComplete) {
+          setStatus("材料已全部入炉：现在点击风箱升温，并让温度保持在绿色区间 5 秒", "All materials are in the furnace. Click the bellows to heat up and hold the green zone for 5 seconds");
+          return;
+        }
+        if (!correct) {
+          el.setAttribute("animation__shake", "property: rotation; to: 0 18 0; dur: 80; dir: alternate; loop: 4");
+          setTimeout(showErrorPopup, 60);
+          return;
+        }
+        if (selectedMaterials[key]) return;
+
+        selectedMaterials[key] = true;
+        el.setAttribute("scale", "1.18 1.18 1.18");
+        el.setAttribute("material", "emissive: #12d8c8; emissiveIntensity: 0.8");
+        var halo = el.querySelector(".material-halo");
+        if (halo) halo.setAttribute("visible", "false");
+        flyMaterialToFurnace(el, key);
+        updateMaterialProgress();
+
+        var count = Object.keys(selectedMaterials).length;
+        if (count < 5) {
+          setStatus("材料已加入炉中：" + count + "/5", "Material added into furnace: " + count + "/5");
+          return;
+        }
+
+        materialSelectionComplete = true;
+        setStatus("材料已全部入炉：现在点击风箱升温，并让温度保持在绿色区间 5 秒", "All materials are in the furnace. Click the bellows to heat up and hold the green zone for 5 seconds");
+        setTimeout(function () {
+          startHeatingFurnace(document.querySelector("#furnace"));
+        }, 650);
+      }
+
+      function chooseMaterial(el) {
+        if (!el || !el.components || !el.components["material-choice"]) return;
+        showMaterialChoice(el);
+      }
+
+      function randomizeMaterialPositions() {
+        var items = Array.prototype.slice.call(document.querySelectorAll(".material-item"));
+        if (items.length === 0) return;
+        var slots = [
+          { x: -1.4, z: -0.35 }, { x: -0.7, z: -0.35 }, { x: 0.0, z: -0.35 }, { x: 0.7, z: -0.35 }, { x: 1.4, z: -0.35 },
+          { x: -1.4, z: 0.32 }, { x: -0.7, z: 0.32 }, { x: 0.0, z: 0.32 }, { x: 0.7, z: 0.32 }, { x: 1.4, z: 0.32 },
+        ];
+        for (var i = slots.length - 1; i > 0; i -= 1) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var tmp = slots[i]; slots[i] = slots[j]; slots[j] = tmp;
+        }
+        items.forEach(function (el, idx) {
+          if (idx >= slots.length) return;
+          var pos = el.getAttribute("position");
+          var y = (pos && typeof pos.y === "number" && !isNaN(pos.y)) ? pos.y : 0.2;
+          var slot = slots[idx];
+          el.setAttribute("position", slot.x + " " + y + " " + slot.z);
+        });
+      }
+
+      function stripMaterialCloneInteraction(material) {
+        var nodes = [material].concat(Array.prototype.slice.call(material.querySelectorAll("[id], .clickable, [material-choice], .material-halo")));
+        nodes.forEach(function (node) {
+          node.removeAttribute("id");
+          node.removeAttribute("material-choice");
+          node.classList.remove("clickable");
+          node.classList.remove("material-item");
+        });
+      }
+
+      function flyMaterialToFurnace(el, key) {
+        var root = document.querySelector("#fireworks");
+        var from = new THREE.Vector3();
+        el.object3D.getWorldPosition(from);
+        var target = sceneLayout.furnaceX + " 0.52 " + sceneLayout.furnaceZ;
+
+        var material = el.cloneNode(true);
+        material.setAttribute("position", from.x + " " + from.y + " " + from.z);
+        material.setAttribute("scale", "1 1 1");
+        stripMaterialCloneInteraction(material);
+        material.setAttribute("animation__fly", "property: position; to: " + target + "; dur: 720; easing: easeInOutQuad");
+        material.setAttribute("animation__shrink", "property: scale; to: 0.16 0.16 0.16; dur: 720; easing: easeInQuad");
+        root.appendChild(material);
+
+        setTimeout(function () {
+          material.remove();
+          createFurnaceEmbers(document.querySelector("#furnace"), 8, 0.22);
+        }, 760);
+      }
+
+      function updateMaterialProgress() {
+        var count = Object.keys(selectedMaterials).length;
+        for (var i = 1; i <= 5; i += 1) {
+          var dot = document.querySelector("#matDot" + i);
+          if (!dot) continue;
+          var active = i <= count;
+          dot.setAttribute("color", active ? "#18d0c4" : "#163a34");
+          dot.setAttribute("material", active ? "emissive: #18d0c4; emissiveIntensity: 1.5" : "");
+        }
+      }
+
+      function prepareMoltenIron() {
+        var furnace = document.querySelector("#furnace");
+
+        if (!materialSelectionComplete) {
+          setStatus("请先选择 5 项正确材料加入熔炉：稻草卷、铁炭、生铁片、黄铜、食盐", "First add all 5 correct materials: Straw Rolls, Charcoal, Pig Iron, Brass, Salt");
+          return;
+        }
+
+        if (heatingActive) {
+          setStatus("炉中正在加热：点击风箱升温，保持绿色温区 5 秒", "The furnace is heating: click the bellows and hold the green zone for 5 seconds");
+          return;
+        }
+
+        if (moltenIronReady) {
+          setStatus("铁水已经流出：进入表演场，把铁水装入双手工具", "Molten iron has flowed out: enter the performance scene and load it into the tools");
+          return;
+        }
+
+        furnacePrepared = true;
+        startHeatingFurnace(furnace);
+      }
+
+      function startHeatingFurnace(furnace) {
+        heatingActive = true;
+        furnacePrepared = true;
+        heatTemperature = 35;
+        heatHoldTime = 0;
+        heatLastTick = performance.now();
+        lastHeatingEmber = 0;
+        var fill = document.querySelector("#heatingFill");
+        var stream = document.querySelector("#moltenStream");
+        var readout = document.querySelector("#temperatureReadout");
+        var holdReadout = document.querySelector("#heatHoldReadout");
+
+        if (fill) {
+          fill.object3D.scale.x = 0.01;
+          fill.setAttribute("position", "-0.78 0 0.025");
+          fill.setAttribute("color", "#ff9b26");
+        }
+        if (readout) readout.setAttribute("value", "温度 35%｜偏低：点击风箱");
+        if (holdReadout) holdReadout.setAttribute("value", "绿色温区 62-82%，保持 0.0/5 秒");
+
+        if (stream) stream.setAttribute("visible", "false");
+        addFurnaceGlow(furnace, 2.4, "#ff8a1c");
+        createFurnaceEmbers(furnace, 32, 0.35);
+        setStatus("控温融铁：绿色温区是 62-82%。温度下降更快，请适时点击风箱补温", "Temperature control: green zone is 62-82%. Heat falls faster now, click bellows to maintain it");
+      }
+
+      function updateHeatingProgress() {
+        if (!heatingActive) return;
+
+        var now = performance.now();
+        var dt = Math.min((now - heatLastTick) / 1000, 0.08);
+        heatLastTick = now;
+        heatTemperature = Math.max(0, heatTemperature - 15 * dt);
+        if (heatTemperature > heatMin && heatTemperature < heatMax) {
+          heatHoldTime += dt;
+        } else if (heatTemperature > heatMax + 8 || heatTemperature < heatMin - 10) {
+          heatHoldTime = Math.max(0, heatHoldTime - 1.5 * dt);
+        }
+
+        var progress = Math.min(heatTemperature / 100, 1);
+        var holdProgress = Math.min(heatHoldTime / 5, 1);
+        var fill = document.querySelector("#heatingFill");
+        var readout = document.querySelector("#temperatureReadout");
+        var holdReadout = document.querySelector("#heatHoldReadout");
+        var heatState = heatTemperature > heatMax ? "过热：暂停拉风箱" : heatTemperature >= heatMin ? "合适：保持节奏" : "偏低：点击风箱";
+        var heatColor = heatTemperature > heatMax ? "#ff3b1f" : heatTemperature >= heatMin ? "#20d482" : "#ff9b26";
+        if (fill) {
+          fill.object3D.scale.x = Math.max(0.01, progress);
+          fill.setAttribute("position", (-0.78 + progress * 0.76) + " 0 0.025");
+          fill.setAttribute("color", heatColor);
+        }
+        if (readout) {
+          readout.setAttribute("value", "温度 " + Math.round(heatTemperature) + "%｜" + heatState);
+          readout.setAttribute("color", heatColor);
+        }
+        if (holdReadout) {
+          holdReadout.setAttribute("value", "绿色温区 62-82%，保持 " + heatHoldTime.toFixed(1) + "/5 秒");
+        }
+
+        if (performance.now() - lastHeatingEmber > 260) {
+          lastHeatingEmber = performance.now();
+          createFurnaceEmbers(document.querySelector("#furnace"), 8 + Math.floor(progress * 12), 0.35 + progress * 0.65);
+          addFurnaceGlow(document.querySelector("#furnace"), 2.4 + progress * 3.4, "#ff9b26");
+          setStatus(
+            "温度 " + Math.round(heatTemperature) + "%｜" + heatState + "｜稳定 " + heatHoldTime.toFixed(1) + "/5 秒",
+            "Heat " + Math.round(heatTemperature) + "% | " + (heatTemperature > heatMax ? "Too hot" : heatTemperature >= heatMin ? "Good range" : "Too low") + " | Stable " + heatHoldTime.toFixed(1) + "/5 sec"
+          );
+        }
+
+        if (heatHoldTime >= 5) completeHeating();
+      }
+
+      function completeHeating() {
+        if (!heatingActive) return;
+        heatingActive = false;
+        moltenIronReady = true;
+        var furnace = document.querySelector("#furnace");
+        var stream = document.querySelector("#moltenStream");
+
+        if (stream) stream.setAttribute("visible", "true");
+        addFurnaceGlow(furnace, 5.8, "#ffb13d");
+        createFurnaceEmbers(furnace, 60, 0.72);
+        setStatus("铁水已经流出：即将进入表演场，用双手工具完成打铁花", "Molten iron is flowing: entering the performance scene to perform Iron Flower with both tools");
+
+        setTimeout(function () {
+          goToScene("scene-practice.html");
+        }, 1300);
+      }
+
+      function pullBellows() {
+        if (!materialSelectionComplete) {
+          setStatus("先把正确材料全部加入炉中，再拉风箱", "Add all correct materials into the furnace before pulling the bellows");
+          return;
+        }
+
+        if (!heatingActive && !moltenIronReady) {
+          startHeatingFurnace(document.querySelector("#furnace"));
+        }
+
+        if (moltenIronReady) {
+          setStatus("铁水已经流出：进入 Practice 模式", "Molten iron has flowed out: enter Practice mode");
+          return;
+        }
+
+        var boost = heatTemperature < 55 ? 9 : heatTemperature < heatMin ? 7 : heatTemperature < heatMax ? 4.5 : 2.5;
+        heatTemperature = Math.min(100, heatTemperature + boost);
+        animateBellows();
+        createBellowsAirPuff();
+        createFurnaceEmbers(document.querySelector("#furnace"), 16, 0.55 + heatTemperature / 130);
+        var state = heatTemperature > heatMax ? "过热，先停一下" : heatTemperature >= heatMin ? "温度合适，保持节奏" : "偏低，继续拉风箱";
+        setStatus("拉风箱升温：当前温度 " + Math.round(heatTemperature) + "%｜" + state, "Bellows heat up: current heat " + Math.round(heatTemperature) + "%. " + state);
+      }
+
+      function completeMelting() {
+        var furnace = document.querySelector("#furnace");
+        moltenIronReady = true;
+
+        var hotspot = document.querySelector("#furnaceHotspot");
+        if (hotspot && hasLadle) hotspot.classList.remove("clickable");
+
+        addFurnaceGlow(furnace, 5.4, "#ffb13d");
+        createFurnaceEmbers(furnace, 52, 0.65);
+
+        if (hasLadle) {
+          setStatus("右手铁锹已就位，前往击打点", "Right-hand shovel is ready. Move to the strike point");
+          setTimeout(function () {
+            setSceneStep(3);
+          }, 500);
+        } else {
+          setStatus("铁水已流出：点击工具站，拿起右手铁锹", "Molten iron has flowed out: pick up the right-hand shovel at the tool station");
+          setTimeout(function () {
+            setSceneStep(3);
+            setStatus("步骤 3 表演场：点击工具站，右手拿铁锹", "Step 3 Performance Scene: click the tool station and take the shovel in your right hand");
+          }, 650);
+        }
+      }
+
+      function startPracticeLevel(level) {
+        rhythmMode = "practice";
+        rhythmLevel = level;
+        rhythmScore = level === 1 ? 0 : rhythmScore;
+        rhythmMisses = 0;
+        rhythmEnded = false;
+        rhythmActive = true;
+        rhythmStart = performance.now();
+        rhythmLastSpawn = 0;
+        resetRhythmEntities();
+        buildRhythmLanes(rhythmConfigs[level - 1].lanes);
+        setStatus("Practice 第 " + level + " 关：30 秒内击中下落铁花，最多失败 3 次", "Practice Level " + level + ": hit falling sparks for 30 sec. You have 3 misses");
+      }
+
+      function startPerformanceShow() {
+        rhythmMode = "performance";
+        rhythmLevel = 1;
+        rhythmScore = 0;
+        rhythmMisses = 0;
+        rhythmEnded = false;
+        rhythmActive = false;
+        performanceRoundStarted = false;
+        rhythmStart = 0;
+        rhythmLastSpawn = 0;
+        rhythmFallbackLane = 0;
+        resetRhythmEntities();
+        buildRhythmLanes(2);
+        setSceneStep(3);
+        stopPersonAtRest();
+        var hud = document.querySelector("#rhythmHud");
+        if (hud) hud.setAttribute("value", "点击开始游戏后开始计时 / Click Start Game to begin");
+        setPerformanceStartButtonVisible(true);
+        updateAudienceReaction();
+        setStatus("表演场已就位：点击圆环上方“开始游戏”后，人物和圆圈开始运动", "Performance stage ready: click Start Game above the rings to start characters and notes");
+      }
+
+      function startPerformanceRound() {
+        if (rhythmMode !== "performance" || performanceRoundStarted) return;
+        performanceRoundStarted = true;
+        rhythmActive = true;
+        rhythmEnded = false;
+        rhythmStart = performance.now();
+        rhythmLastSpawn = rhythmStart;
+        rhythmFallbackLane = 0;
+        rhythmScore = 0;
+        rhythmMisses = 0;
+        resetRhythmEntities();
+        buildRhythmLanes(2);
+        startPersonThrowLoops();
+        var hud = document.querySelector("#rhythmHud");
+        setPerformanceStartButtonVisible(false);
+        if (hud) hud.setAttribute("value", "Time 60  Score 0  Miss 0");
+        updateAudienceReaction();
+        setStatus("正式表演开始：圆圈任意部分进入圆环外径范围时，点击圆环任意部位打出铁花", "Performance starts: when any part of the falling circle enters the ring's outer radius, click anywhere on the ring target to burst Iron Flower");
+      }
+
+      function setPerformanceStartButtonVisible(visible) {
+        var startButton = document.querySelector("#performanceStartButton");
+        if (!startButton) return;
+        startButton.setAttribute("visible", visible);
+        startButton.object3D.visible = visible;
+        startButton.classList.toggle("clickable", visible);
+      }
+
+      function resetRhythmEntities() {
+        rhythmNotes = [];
+        var lanes = document.querySelector("#rhythmLanes");
+        var notes = document.querySelector("#rhythmNotes");
+        if (lanes) lanes.innerHTML = "";
+        if (notes) notes.innerHTML = "";
+      }
+
+      function buildRhythmLanes(count) {
+        var lanes = document.querySelector("#rhythmLanes");
+        var title = document.querySelector("#rhythmTitle");
+        if (!lanes) return;
+
+        var spacing = rhythmMode === "performance" ? 0.82 : 0.62;
+        var total = (count - 1) * spacing;
+        for (var i = 0; i < count; i += 1) {
+          var x = -total / 2 + i * spacing;
+          var lane = document.createElement("a-entity");
+          lane.setAttribute("position", x + " 1.85 0");
+          var laneGuide = rhythmMode === "performance" ? "" : '<a-cylinder radius="0.018" height="2.5" rotation="0 0 0" color="#ffd37a" material="transparent: true; opacity: 0.34"></a-cylinder>';
+          lane.innerHTML =
+            laneGuide +
+            '<a-circle class="clickable rhythm-hit" data-lane-index="' + i + '" position="0 -1.05 0.015" radius="0.26" material="shader: flat; transparent: true; opacity: 0; depthWrite: false; side: double"></a-circle>' +
+            '<a-ring position="0 -1.05 0.03" radius-inner="0.16" radius-outer="0.23" color="#ffbd42" material="transparent: true; opacity: 0.9; emissive: #ff8a00; emissiveIntensity: 0.65"></a-ring>' +
+            '<a-text value="' + (i + 1) + '" align="center" width="1.5" position="0 -1.42 0.04" color="#fff4d2"></a-text>';
+          lanes.appendChild(lane);
+        }
+
+        if (title) {
+          var label = rhythmMode === "practice" ? "Practice Mode 第 " + rhythmLevel + " 关" : "Performance Mode 正式表演";
+          var body = rhythmMode === "practice" ? "Hit notes in the judgment rings. Three misses fail the level" : "60 seconds, unlimited life. Audience reacts to your score";
+          title.setAttribute("canvas-label", "text: " + label + "|" + body + "; width: 4.8; height: 0.72");
+        }
+      }
+
+      function updateRhythmGame() {
+        if (!rhythmActive) return;
+        var now = performance.now();
+        var config = rhythmMode === "practice" ? rhythmConfigs[rhythmLevel - 1] : { lanes: 2, speed: 1.45, spawn: 610, duration: 60000 };
+        var elapsed = now - rhythmStart;
+        var hud = document.querySelector("#rhythmHud");
+
+        if (rhythmMode === "performance") {
+          spawnReadyPerformanceNotes(config, now);
+        } else if (shouldSpawnRhythmNote(now, config)) {
+          rhythmLastSpawn = now;
+          spawnRhythmNote(config);
+        }
+
+        rhythmNotes.slice().forEach(function (note) {
+          updateRhythmNotePosition(note, now, config);
+          if (isRhythmNoteMissed(note)) {
+            note.el.remove();
+            rhythmNotes.splice(rhythmNotes.indexOf(note), 1);
+            registerRhythmMiss();
+          }
+        });
+
+        if (hud) {
+          var remaining = Math.max(0, Math.ceil((config.duration - elapsed) / 1000));
+          if (rhythmMode === "practice") {
+            hud.setAttribute("value", "Practice " + rhythmLevel + "/3   Time " + remaining + "   Miss " + rhythmMisses + "/3   Score " + rhythmScore);
+          } else {
+            hud.setAttribute("value", "Time " + remaining + "  Score " + rhythmScore + "  Miss " + rhythmMisses);
+          }
+        }
+
+        if (rhythmMode === "practice" && rhythmMisses >= 3) {
+          restartPracticeLevel();
+          return;
+        }
+
+        if (elapsed >= config.duration && !rhythmEnded) {
+          rhythmEnded = true;
+          if (rhythmMode === "practice") {
+            if (rhythmLevel < 3) {
+              setStatus("Practice 第 " + rhythmLevel + " 关通过：进入下一关", "Practice Level " + rhythmLevel + " passed: next level");
+              setTimeout(function () { startPracticeLevel(rhythmLevel + 1); }, 1200);
+            } else {
+              rhythmActive = false;
+              setStatus("三关通过：获得打铁花表演资质，进入正式表演", "All three levels passed: performance qualification earned");
+              setTimeout(function () { goToScene("scene-performance.html"); }, 1500);
+            }
+          } else {
+            rhythmActive = false;
+            updateAudienceReaction();
+            stopPersonAtRest();
+            setStatus("表演结束：最终得分 " + rhythmScore, "Performance complete: final score " + rhythmScore);
+          }
+        }
+      }
+
+      function stopPersonAtRest() {
+        ["#personModelMirror", "#personModel1"].forEach(function (selector) {
+          var person = document.querySelector(selector);
+          var throwLoop = person && person.components && person.components["person-throw-loop"];
+          if (throwLoop) throwLoop.stopAtRest();
+        });
+      }
+
+      function startPersonThrowLoops() {
+        ["#personModelMirror", "#personModel1"].forEach(function (selector) {
+          var person = document.querySelector(selector);
+          var throwLoop = person && person.components && person.components["person-throw-loop"];
+          if (!throwLoop) return;
+          throwLoop.stopped = false;
+          throwLoop.phase = 0;
+          throwLoop.progress = 0;
+          throwLoop.lastReleaseCycle = -1;
+          throwLoop.resetBase();
+        });
+      }
+
+      function spawnRhythmNote(config, forcedLane) {
+        var lanes = config.lanes;
+        var lane = typeof forcedLane === "number" ? forcedLane : Math.floor(Math.random() * lanes);
+        var spacing = 0.62;
+        var total = (lanes - 1) * spacing;
+        var x = -total / 2 + lane * spacing;
+        var note = document.createElement("a-entity");
+        note.setAttribute("geometry", "primitive: sphere; radius: 0.075");
+        note.setAttribute("material", "color: #fff4c1; emissive: #ff6a00; emissiveIntensity: 2.8; transparent: true; opacity: 1");
+        document.querySelector("#rhythmNotes").appendChild(note);
+
+        if (rhythmMode === "performance") {
+          var ringCenter = getRhythmRingLocalCenter(lane);
+          var end = ringCenter.clone();
+          end.y -= 0.31;
+          var start = getThrowStartLocalPosition(end, lane);
+          var control = new THREE.Vector3(
+            (start.x + ringCenter.x) / 2,
+            Math.max(start.y, ringCenter.y) + 1.75,
+            (start.z + ringCenter.z) / 2
+          );
+          var exitControl = new THREE.Vector3(
+            ringCenter.x,
+            ringCenter.y - 0.16,
+            ringCenter.z
+          );
+          var birth = performance.now();
+          var duration = choosePerformanceNoteDuration(birth, 1200);
+          note.setAttribute("position", start.x + " " + start.y + " " + start.z);
+          rhythmNotes.push({
+            el: note,
+            lane: lane,
+            x: start.x,
+            y: start.y,
+            z: start.z,
+            curve: true,
+            start: start,
+            control: control,
+            end: end,
+            ringCenter: ringCenter,
+            exitControl: exitControl,
+            birth: birth,
+            duration: duration,
+            arrivalTime: birth + duration * 0.82,
+          });
+        } else {
+          note.setAttribute("position", x + " 3.1 0.08");
+          rhythmNotes.push({ el: note, lane: lane, x: x, y: 3.1, z: 0.08 });
+        }
+      }
+
+      function shouldSpawnRhythmNote(now, config) {
+        if (rhythmMode !== "performance") return now - rhythmLastSpawn > config.spawn;
+        return false;
+      }
+
+      function spawnReadyPerformanceNotes(config, now) {
+        var hasReadyThrower = false;
+        var firstLane = rhythmFallbackLane % config.lanes;
+        var candidateLane = -1;
+        for (var index = 0; index < config.lanes; index += 1) {
+          var lane = (firstLane + index) % config.lanes;
+          var person = getPerformancePersonForLane(lane, config.lanes);
+          var throwLoop = person && person.components && person.components["person-throw-loop"];
+          if (throwLoop && throwLoop.ready && !throwLoop.stopped) hasReadyThrower = true;
+          if (throwLoop && throwLoop.canReleaseThrow()) {
+            candidateLane = lane;
+            break;
+          }
+        }
+
+        if (candidateLane >= 0 && canSpawnPerformanceNote(now)) {
+          var candidatePerson = getPerformancePersonForLane(candidateLane, config.lanes);
+          var candidateLoop = candidatePerson && candidatePerson.components && candidatePerson.components["person-throw-loop"];
+          if (candidateLoop) candidateLoop.markThrowReleased();
+          rhythmLastSpawn = now;
+          spawnRhythmNote(config, candidateLane);
+          rhythmFallbackLane = candidateLane + 1;
+          return;
+        }
+
+        if (!hasReadyThrower && now - rhythmLastSpawn > Math.max(config.spawn, performanceSpawnGap)) {
+          rhythmLastSpawn = now;
+          spawnRhythmNote(config, firstLane);
+          rhythmFallbackLane = firstLane + 1;
+        }
+      }
+
+      function canSpawnPerformanceNote(now) {
+        return now - rhythmLastSpawn >= performanceSpawnGap;
+      }
+
+      function choosePerformanceNoteDuration(now, baseDuration) {
+        var nextArrival = now + baseDuration * 0.82;
+        var nearestArrivalGap = rhythmNotes.reduce(function (nearest, note) {
+          if (!note.arrivalTime) return nearest;
+          return Math.min(nearest, Math.abs(note.arrivalTime - nextArrival));
+        }, Infinity);
+        var crowdingDelay = nearestArrivalGap < 180 ? 180 - nearestArrivalGap : 0;
+        return baseDuration + crowdingDelay + Math.random() * 180;
+      }
+
+      function updateRhythmNotePosition(note, now, config) {
+        if (note.curve) {
+          var progress = Math.min((now - note.birth) / note.duration, 1.2);
+          note.progress = progress;
+          var clamped = Math.min(progress, 1);
+          var pos = getThrowCurvePoint(note, clamped);
+          note.x = pos.x;
+          note.y = pos.y;
+          note.z = pos.z;
+          note.el.setAttribute("position", note.x + " " + note.y + " " + note.z);
+          return;
+        }
+
+        note.y -= config.speed / 60;
+        note.el.setAttribute("position", note.x + " " + note.y + " " + note.z);
+      }
+
+      function isRhythmNoteMissed(note) {
+        if (note.curve) return note.progress >= 1;
+        return note.y < 0.48;
+      }
+
+      function quadraticPoint(start, control, end, progress) {
+        var inverse = 1 - progress;
+        return new THREE.Vector3(
+          inverse * inverse * start.x + 2 * inverse * progress * control.x + progress * progress * end.x,
+          inverse * inverse * start.y + 2 * inverse * progress * control.y + progress * progress * end.y,
+          inverse * inverse * start.z + 2 * inverse * progress * control.z + progress * progress * end.z
+        );
+      }
+
+      function getThrowCurvePoint(note, progress) {
+        if (progress <= 0.82) {
+          return quadraticPoint(note.start, note.control, note.ringCenter, progress / 0.82);
+        }
+        return note.ringCenter.clone().lerp(note.end, (progress - 0.82) / 0.18);
+      }
+
+      function hitRhythmLane(laneIndex) {
+        if (!rhythmActive) return;
+        var targetY = 0.8;
+        var noteRadius = 0.075;
+        var ringOuterRadius = 0.23;
+        var best = null;
+        rhythmNotes.forEach(function (note) {
+          if (note.lane !== laneIndex) return;
+          var ringCenter = getRhythmRingLocalCenter(laneIndex);
+          var distance = note.curve
+            ? Math.sqrt(Math.pow(note.x - ringCenter.x, 2) + Math.pow(note.y - ringCenter.y, 2))
+            : Math.abs(note.y - targetY);
+          var entersOuterRadius = distance <= ringOuterRadius + noteRadius;
+          if (entersOuterRadius && (!best || distance < best.distance)) {
+            best = { note: note, distance: distance };
+          }
+        });
+
+        if (!best) {
+          registerRhythmMiss();
+          return;
+        }
+
+        var note = best.note;
+        rhythmNotes.splice(rhythmNotes.indexOf(note), 1);
+        note.el.remove();
+        rhythmScore += best.distance >= 0.16 && best.distance <= 0.23 ? 120 : 80;
+        var ringCenter = getRhythmRingCenter(laneIndex);
+        if (rhythmMode === "performance") {
+          launchIronFlower(ringCenter.x, ringCenter.y, ringCenter.z);
+          setStatus("圆圈进入圆环外径范围：铁花从圆环中散开", "The falling circle entered the ring's outer radius: Iron Flower bursts from the ring");
+        } else {
+          createFlash(document.querySelector("#fireworks"), ringCenter.x, ringCenter.y, ringCenter.z, 4, 5, 280);
+        }
+        if (rhythmMode === "performance") updateAudienceReaction();
+      }
+
+      function getRhythmRingCenter(laneIndex) {
+        var ring = document.querySelector('.rhythm-hit[data-lane-index="' + laneIndex + '"]');
+        var center = new THREE.Vector3(sceneStepX[currentSceneStep], 0.8, -3.47);
+        if (ring) ring.object3D.getWorldPosition(center);
+        return center;
+      }
+
+      function getRhythmRingLocalCenter(laneIndex) {
+        var notesRoot = document.querySelector("#rhythmNotes");
+        var worldCenter = getRhythmRingCenter(laneIndex);
+        if (notesRoot) return notesRoot.object3D.worldToLocal(worldCenter.clone());
+        return new THREE.Vector3(0, 0.8, 0.03);
+      }
+
+      function getThrowStartLocalPosition(endLocal, laneIndex) {
+        var notesRoot = document.querySelector("#rhythmNotes");
+        var person = getPerformancePersonForLane(laneIndex, 2);
+        var pose = person && person.querySelector("#personPoseThrow");
+        var ringWorld = endLocal.clone();
+        if (notesRoot) notesRoot.object3D.localToWorld(ringWorld);
+
+        var startWorld = getSpoonLikeWorldPosition(pose, ringWorld, person);
+        if (notesRoot) return notesRoot.object3D.worldToLocal(startWorld);
+        return new THREE.Vector3(2.0, 1.6, -1.2);
+      }
+
+      function getSpoonLikeWorldPosition(pose, ringWorld, person) {
+        if (pose && pose.components && pose.components["gltf-model"]) {
+          var spoonBowlLocal = new THREE.Vector3(-0.62, 0.72, 0.03);
+          return pose.object3D.localToWorld(spoonBowlLocal);
+        }
+
+        var fallback = new THREE.Vector3(9.05, 1.35, -4.25);
+        if (person) {
+          person.object3D.getWorldPosition(fallback);
+          var direction = ringWorld.clone().sub(fallback);
+          direction.y = 0;
+          if (direction.lengthSq() > 0.001) direction.normalize();
+          fallback.addScaledVector(direction, 0.7);
+          fallback.y += 1.35;
+        }
+        return fallback;
+      }
+
+      function getPerformancePersonForLane(laneIndex, laneCount) {
+        if (laneCount > 1 && laneIndex === 0) return document.querySelector("#personModelMirror");
+        return document.querySelector("#personModel1");
+      }
+
+      function registerRhythmMiss() {
+        if (!rhythmActive) return;
+        rhythmMisses += 1;
+        rhythmScore = Math.max(0, rhythmScore - (rhythmMode === "performance" ? 45 : 25));
+        if (rhythmMode === "performance") updateAudienceReaction();
+      }
+
+      function restartPracticeLevel() {
+        rhythmActive = false;
+        setStatus("Practice 第 " + rhythmLevel + " 关失败：3 次失误已用完，重新开始本关", "Practice Level " + rhythmLevel + " failed: three misses used. Restarting");
+        setTimeout(function () {
+          startPracticeLevel(rhythmLevel);
+        }, 1400);
+      }
+
+      function updateAudienceReaction() {
+        var reaction = document.querySelector("#audienceReaction");
+        if (!reaction) return;
+        var text = "观众屏息等待";
+        if (rhythmScore >= 2600) text = "满堂喝彩！铁花如瀑";
+        else if (rhythmScore >= 1600) text = "掌声热烈，观众惊叹";
+        else if (rhythmScore >= 800) text = "观众点头，节奏稳定";
+        else if (rhythmMisses > 4) text = "观众有些紧张，注意节奏";
+        reaction.setAttribute("value", text);
+      }
+
+      function animateBellows() {
+        var body = document.querySelector("#bellowsBody");
+        var handle = document.querySelector("#bellowsHandle");
+        if (!body || !handle) return;
+
+        body.removeAttribute("animation__compress");
+        body.removeAttribute("animation__release");
+        handle.removeAttribute("animation__pull");
+        handle.removeAttribute("animation__return");
+
+        body.setAttribute("animation__compress", "property: scale; to: 1 0.62 0.86; dur: 160; easing: easeOutQuad");
+        handle.setAttribute("animation__pull", "property: position; to: -0.74 0.32 0; dur: 160; easing: easeOutQuad");
+
+        setTimeout(function () {
+          body.setAttribute("animation__release", "property: scale; to: 1 1 1; dur: 260; easing: easeOutElastic");
+          handle.setAttribute("animation__return", "property: position; to: -0.62 0.45 0; dur: 260; easing: easeOutElastic");
+        }, 170);
+      }
+
+      function updateHeatIndicators() {
+        for (var i = 1; i <= 3; i += 1) {
+          var dot = document.querySelector("#heatDot" + i);
+          if (!dot) continue;
+          var active = i <= bellowsPulls;
+          dot.setAttribute("color", active ? "#ffb13d" : "#3b2a1c");
+          dot.setAttribute("material", active ? "emissive: #ff6a00; emissiveIntensity: 1.7" : "");
+        }
+      }
+
+      function createBellowsAirPuff() {
+        var root = document.querySelector("#fireworks");
+        for (var i = 0; i < 22; i += 1) {
+          var puff = document.createElement("a-entity");
+          puff.setAttribute("geometry", "primitive: sphere; radius: 0.018");
+          puff.setAttribute("position", "-0.62 0.44 -3.38");
+          puff.setAttribute("material", "color: #ffcc72; emissive: #ff6a00; emissiveIntensity: 1.4; transparent: true; opacity: 0.55");
+          puff.setAttribute("spark-move", {
+            vx: -2.35 - Math.random() * 0.75,
+            vy: -0.05 + Math.random() * 0.25,
+            vz: (Math.random() - 0.5) * 0.22,
+            gravity: 0.006,
+            life: 420 + Math.random() * 220,
+            delay: Math.random() * 90,
+            trail: false,
+          });
+          root.appendChild(puff);
+        }
+      }
+
+      function addFurnaceGlow(furnace, intensity, color) {
+        var glow = document.createElement("a-light");
+        glow.setAttribute("type", "point");
+        glow.setAttribute("color", color);
+        glow.setAttribute("intensity", String(intensity));
+        glow.setAttribute("distance", "7");
+        glow.setAttribute("position", "0 0.35 0");
+        furnace.appendChild(glow);
+      }
+
+      function createFurnaceEmbers(furnace, count, heightBoost) {
+        for (var i = 0; i < count; i += 1) {
+          var ember = document.createElement("a-entity");
+          ember.setAttribute("mixin", "spark");
+          ember.setAttribute("position", (Math.random() - 0.5) * 0.45 + " 0.28 " + (Math.random() - 0.5) * 0.45);
+          ember.setAttribute("scale", "0.55 0.55 0.55");
+          ember.setAttribute("spark-move", {
+            vx: (Math.random() - 0.5) * 0.28,
+            vy: heightBoost + Math.random() * 0.95,
+            vz: (Math.random() - 0.5) * 0.28,
+            life: 700 + Math.random() * 420,
+          });
+          furnace.appendChild(ember);
+        }
+      }
+
+      function toggleToolsAtStation() {
+        if (hasLadle) {
+          returnToolsToStation();
+        } else {
+          if (!moltenIronReady) {
+            setStatus("工具在第 3 步使用：请先完成材料入炉和 5 秒加热点火", "Tools are used in Step 3: complete materials and the 5-second heating first");
+            return;
+          }
+          pickUpLadle();
+        }
+      }
+
+      function pickUpLadle() {
+        if (hasLadle) return;
+
+        hasLadle = true;
+
+        var toolStation = document.querySelector("#ladle");
+        toolStation.classList.remove("clickable");
+        toolStation.setAttribute("visible", "true");
+        setTimeout(function () {
+          toolStation.classList.add("clickable");
+        }, 250);
+
+        addHeldShovel();
+        moveLadleToBestAnchor();
+        setSceneStep(3);
+        setLadleHintVisible(false);
+        setStatus("右手铁锹已就位：等待圆圈进入圆环后点击圆环打铁花", "Right-hand shovel is ready: click the ring when the circle enters it");
+      }
+
+      function returnToolsToStation() {
+        var toolStation = document.querySelector("#ladle");
+        var bowl = document.querySelector("#heldBowl");
+        var paddle = document.querySelector("#heldPaddle");
+        var shovel = document.querySelector("#heldShovel");
+        var molten = document.querySelector("#heldMoltenIron");
+
+        if (molten) molten.remove();
+        if (bowl) bowl.remove();
+        if (paddle) paddle.remove();
+        if (shovel) shovel.remove();
+
+        hasLadle = false;
+        ladleLoaded = false;
+        lowerStickAdded = false;
+
+        toolStation.setAttribute("visible", "true");
+        toolStation.classList.add("clickable");
+        toolStation.setAttribute("scale", "1 1 1");
+
+        if (moltenIronReady) {
+          setSceneStep(3);
+          setStatus("铁锹已放回：可再次点击工具站拿起右手铁锹", "Shovel returned: click the tool station again to take the right-hand shovel");
+        } else {
+          setStatus("工具已放回：按三步流程继续执行", "Tools returned: continue following the three-step flow");
+        }
+      }
+
+      function setLadleHintVisible(visible) {
+        var label = document.querySelector("#labelLadle");
+        if (!label) return;
+        label.setAttribute("visible", visible);
+        label.object3D.visible = visible;
+      }
+
+      function moveLadleToBestAnchor() {
+        addHeldShovel();
+        var shovel = document.querySelector("#heldShovel");
+        var scene = document.querySelector("a-scene");
+        var rightAnchor = document.querySelector("#handHeldAnchor");
+        var cameraAnchor = document.querySelector("#heldAnchor");
+        var useHand = scene && scene.is("vr-mode") && rightAnchor;
+
+        if (!shovel) return;
+
+        if (useHand) {
+          rightAnchor.appendChild(shovel);
+          shovel.setAttribute("position", "0 0 -0.04");
+          shovel.setAttribute("rotation", "0 90 0");
+          shovel.setAttribute("scale", "0.5 0.5 0.5");
+        } else if (cameraAnchor) {
+          cameraAnchor.appendChild(shovel);
+          shovel.setAttribute("position", "0.34 -0.03 -0.02");
+          shovel.setAttribute("rotation", "0 90 0");
+          shovel.setAttribute("scale", "0.5 0.5 0.5");
+        }
+      }
+
+      function fillLadleWithMoltenIron() {
+        addHeldShovel();
+        if (ladleLoaded) return;
+        ladleLoaded = true;
+      }
+
+      function addLowerStick() {
+        if (lowerStickAdded) return;
+        lowerStickAdded = true;
+
+        addHeldShovel();
+      }
+
+      function addHeldShovel() {
+        if (document.querySelector("#heldShovel")) return;
+
+        var shovel = document.createElement("a-entity");
+        shovel.setAttribute("id", "heldShovel");
+        shovel.setAttribute("gltf-model", "#shovelAsset");
+        shovel.setAttribute("shadow", "cast: true; receive: true");
+        document.querySelector("#fireworks").appendChild(shovel);
+      }
+
+      function launchIronFlower(x, y, z) {
+        var root = document.querySelector("#fireworks");
+        var origin = new THREE.Vector3(x, y, z + 0.65);
+        var burst = new THREE.Vector3(x, y, z);
+
+        createIronComet(root, origin, burst);
+        createShockRing(root, x, y, z);
+        createFlash(root, x, y, z, 11, 11, 760);
+
+        for (var i = 0; i < 420; i += 1) {
+          var spark = document.createElement("a-entity");
+          var angle = THREE.MathUtils.degToRad(-28 + Math.random() * 236);
+          var fan = Math.pow(Math.random(), 0.55);
+          var speed = 1.2 + Math.random() * 7.6;
+          var size = 0.42 + Math.random() * 1.9;
+          var delay = Math.random() * 240;
+
+          spark.setAttribute("mixin", "spark");
+          spark.setAttribute("position", x + " " + y + " " + z);
+          spark.setAttribute("scale", size + " " + size + " " + size);
+          spark.setAttribute(
+            "material",
+            "color: " +
+              randomFireColor() +
+              "; emissive: #ff6a00; emissiveIntensity: " +
+              (2.4 + Math.random() * 2.8) +
+              "; transparent: true; opacity: 1"
+          );
+          spark.setAttribute("spark-move", {
+            vx: Math.cos(angle) * speed * fan,
+            vy: 0.35 + Math.random() * 3.8,
+            vz: -Math.abs(Math.sin(angle)) * speed * 0.5 - Math.random() * 0.65,
+            gravity: 0.035 + Math.random() * 0.04,
+            life: 980 + Math.random() * 1050,
+            delay: delay,
+            trail: Math.random() > 0.5,
+          });
+          root.appendChild(spark);
+        }
+
+        for (var j = 0; j < 130; j += 1) {
+          var ember = document.createElement("a-entity");
+          var drift = THREE.MathUtils.degToRad(25 + Math.random() * 130);
+          var emberSpeed = 0.6 + Math.random() * 2.4;
+          ember.setAttribute("mixin", "spark");
+          ember.setAttribute("position", (x + (Math.random() - 0.5) * 2.8) + " " + (y + 1.1 + Math.random() * 1.45) + " " + (z - 0.55 - Math.random() * 1.35));
+          ember.setAttribute("scale", "0.55 0.55 0.55");
+          ember.setAttribute("material", "color: #ffb13d; emissive: #ff5a14; emissiveIntensity: 2.2; transparent: true; opacity: 0.85");
+          ember.setAttribute("spark-move", {
+            vx: Math.cos(drift) * emberSpeed * 0.45,
+            vy: -0.25 - Math.random() * 0.65,
+            vz: -Math.sin(drift) * emberSpeed * 0.18,
+            gravity: 0.018,
+            life: 1400 + Math.random() * 1300,
+            delay: 180 + Math.random() * 450,
+            trail: false,
+          });
+          root.appendChild(ember);
+        }
+      }
+
+      function createIronComet(root, origin, burst) {
+        var comet = document.createElement("a-entity");
+        comet.setAttribute("geometry", "primitive: sphere; radius: 0.075");
+        comet.setAttribute("material", "color: #fff4c1; emissive: #ff6a00; emissiveIntensity: 4.5; transparent: true; opacity: 1");
+        comet.setAttribute("position", origin.x + " " + origin.y + " " + origin.z);
+        comet.setAttribute("comet-flight", {
+          toX: burst.x,
+          toY: burst.y,
+          toZ: burst.z,
+          life: 360,
+        });
+        root.appendChild(comet);
+      }
+
+      function createShockRing(root, x, y, z) {
+        var ring = document.createElement("a-ring");
+        ring.setAttribute("position", x + " " + y + " " + z);
+        ring.setAttribute("rotation", "0 0 0");
+        ring.setAttribute("radius-inner", "0.12");
+        ring.setAttribute("radius-outer", "0.16");
+        ring.setAttribute("color", "#fff4c1");
+        ring.setAttribute("material", "shader: flat; transparent: true; opacity: 0.86; side: double");
+        ring.setAttribute("shock-ring", "");
+        root.appendChild(ring);
+      }
+
+      function createFlash(root, x, y, z, intensity, distance, life) {
+        var flash = document.createElement("a-light");
+        flash.setAttribute("type", "point");
+        flash.setAttribute("color", "#ffb13d");
+        flash.setAttribute("intensity", String(intensity));
+        flash.setAttribute("distance", String(distance));
+        flash.setAttribute("position", x + " " + y + " " + z);
+        flash.setAttribute("flash-fade", { intensity: intensity, life: life });
+        root.appendChild(flash);
+      }
+
+      AFRAME.registerComponent("spark-move", {
+        schema: {
+          vx: { default: 0 },
+          vy: { default: 1 },
+          vz: { default: 0 },
+          gravity: { default: 0.045 },
+          life: { default: 1000 },
+          delay: { default: 0 },
+          trail: { default: false },
+        },
+
+        init: function () {
+          this.birth = performance.now();
+          this.lastTrail = 0;
+          this.startScale = this.el.object3D.scale.clone();
+          if (this.data.delay > 0) {
+            this.el.object3D.visible = false;
+          }
+        },
+
+        tick: function () {
+          var now = performance.now();
+          var age = now - this.birth - this.data.delay;
+          if (age < 0) return;
+          this.el.object3D.visible = true;
+          var progress = age / this.data.life;
+
+          this.el.object3D.position.x += this.data.vx / 60;
+          this.el.object3D.position.y += this.data.vy / 60;
+          this.el.object3D.position.z += this.data.vz / 60;
+          this.data.vy -= this.data.gravity;
+
+          var fade = Math.max(0, 1 - progress);
+          this.el.object3D.scale.copy(this.startScale).multiplyScalar(0.35 + fade * 0.95);
+          this.el.setAttribute("material", "opacity", fade);
+
+          if (this.data.trail && now - this.lastTrail > 42 && fade > 0.16) {
+            this.lastTrail = now;
+            createTrailDot(this.el.parentElement, this.el.object3D.position, fade);
+          }
+
+          if (progress >= 1 || this.el.object3D.position.y < 0) {
+            this.el.remove();
+          }
+        },
+      });
+
+      function createTrailDot(root, position, fade) {
+        if (!root) return;
+        if (root.children.length > 850) return;
+        var dot = document.createElement("a-entity");
+        dot.setAttribute("geometry", "primitive: sphere; radius: 0.018");
+        dot.setAttribute("position", position.x + " " + position.y + " " + position.z);
+        dot.setAttribute("material", "color: #ffd06a; emissive: #ff5a14; emissiveIntensity: 1.8; transparent: true; opacity: " + Math.min(0.72, fade));
+        dot.setAttribute("trail-fade", "");
+        root.appendChild(dot);
+      }
+
+      AFRAME.registerComponent("trail-fade", {
+        init: function () {
+          this.birth = performance.now();
+          this.startScale = this.el.object3D.scale.clone();
+        },
+
+        tick: function () {
+          var progress = (performance.now() - this.birth) / 420;
+          this.el.object3D.scale.copy(this.startScale).multiplyScalar(Math.max(0.05, 1 - progress));
+          this.el.setAttribute("material", "opacity", Math.max(0, 0.72 * (1 - progress)));
+          if (progress >= 1) this.el.remove();
+        },
+      });
+
+      AFRAME.registerComponent("comet-flight", {
+        schema: {
+          toX: { default: 0 },
+          toY: { default: 0 },
+          toZ: { default: 0 },
+          life: { default: 360 },
+        },
+
+        init: function () {
+          this.birth = performance.now();
+          this.from = this.el.object3D.position.clone();
+          this.to = new THREE.Vector3(this.data.toX, this.data.toY, this.data.toZ);
+        },
+
+        tick: function () {
+          var progress = Math.min((performance.now() - this.birth) / this.data.life, 1);
+          var eased = 1 - Math.pow(1 - progress, 3);
+          this.el.object3D.position.lerpVectors(this.from, this.to, eased);
+          this.el.setAttribute("material", "opacity", 1 - progress * 0.25);
+          createTrailDot(this.el.parentElement, this.el.object3D.position, 0.9);
+          if (progress >= 1) this.el.remove();
+        },
+      });
+
+      AFRAME.registerComponent("shock-ring", {
+        init: function () {
+          this.birth = performance.now();
+        },
+
+        tick: function () {
+          var progress = (performance.now() - this.birth) / 680;
+          var scale = 1 + progress * 3.2;
+          this.el.object3D.scale.set(scale, scale, scale);
+          this.el.setAttribute("material", "opacity", Math.max(0, 0.86 * (1 - progress)));
+          if (progress >= 1) this.el.remove();
+        },
+      });
+
+      AFRAME.registerComponent("flash-fade", {
+        schema: {
+          intensity: { default: 7 },
+          life: { default: 450 },
+        },
+
+        init: function () {
+          this.birth = performance.now();
+        },
+
+        tick: function () {
+          var progress = (performance.now() - this.birth) / this.data.life;
+          this.el.setAttribute("intensity", this.data.intensity * Math.max(0, 1 - progress));
+
+          if (progress >= 1) {
+            this.el.remove();
+          }
+        },
+      });
+
+      function randomFireColor() {
+        var colors = ["#fff4c1", "#ffd06a", "#ff9d1e", "#ff5a14", "#db1f13"];
+        return colors[Math.floor(Math.random() * colors.length)];
+      }
+
+      window.addEventListener("load", function () {
+        var scene = document.querySelector("a-scene");
+        var startButton = document.querySelector("#startButton");
+        applySceneShell();
+        document.querySelector("#langToggle").addEventListener("click", toggleLanguage);
+        startButton.addEventListener("click", startGame);
+        document.addEventListener("keydown", function (event) {
+          if (gameStarted) return;
+          if (event.code === "Enter" || event.code === "Space") {
+            event.preventDefault();
+            startGame();
+          }
+        });
+        document.querySelector("#choiceYes").addEventListener("click", confirmChoice);
+        document.querySelector("#choiceNo").addEventListener("click", closeChoicePanel);
+
+        applyLanguage();
+        setInitialScenePreview();
+        scene.setAttribute("manual-interaction", "");
+        scene.setAttribute("heating-progress-loop", "");
+        scene.addEventListener("enter-vr", function () {
+          document.body.classList.add("vr-mode");
+          closeChoicePanel();
+          if (hasLadle) {
+            setStatus("已进入 VR：右手铁锹，摇杆可移动", "VR mode active: right-hand shovel, joystick moves you");
+          } else {
+            setStatus("已进入 VR：转头可看四周，摇杆可移动", "VR mode active: turn your head to look around and use the joystick to move");
+          }
+          if (hasLadle) setTimeout(moveLadleToBestAnchor, 120);
+        });
+        scene.addEventListener("exit-vr", function () {
+          document.body.classList.remove("vr-mode");
+          closeChoicePanel();
+          setStatus("已退出 VR：电脑可用鼠标视角和 WASD 测试", "Exited VR: on desktop, test with mouse look and WASD");
+          if (hasLadle) moveLadleToBestAnchor();
+        });
+        document.querySelector("#rig").setAttribute("pico-thumbstick-move", "speed: 1.8; turnSpeed: 90");
+        document.querySelector("#furnaceHotspot").setAttribute("furnace-step", "");
+        document.querySelector("#bellowsHotspot").setAttribute("bellows-step", "");
+        document.querySelectorAll(".material-item").forEach(function (item) {
+          item.setAttribute("material-choice", item.getAttribute("material-choice"));
+        });
+        if (scene.hasLoaded) {
+          setTimeout(randomizeMaterialPositions, 0);
+        } else {
+          scene.addEventListener("loaded", function () {
+            randomizeMaterialPositions();
+          });
+        }
+        document.querySelector("#ladle").setAttribute("pickable", "");
+        document.querySelector("#strikeTarget").setAttribute("strike-target", "");
+        document.querySelector("#languageSwitch").setAttribute("language-switch", "");
+      });
+    </script>
+  </body>
+</html>
