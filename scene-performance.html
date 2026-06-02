@@ -3039,15 +3039,19 @@
         rhythmScore += hitResult.points;
         animateRhythmLaneFeedback(laneIndex, true, hitResult.tier === "marvelous" ? 1 : hitResult.tier === "excellent" ? 0.5 : 0);
         var flashCenter = note.curve ? getRhythmRingCenter(laneIndex) : new THREE.Vector3(sceneStepX[currentSceneStep], 1.15, performanceRingZ);
-        createFlash(
-          document.querySelector("#fireworks"),
-          flashCenter.x,
-          flashCenter.y,
-          flashCenter.z,
-          hitResult.tier === "marvelous" ? 2.2 : hitResult.tier === "excellent" ? 1.6 : 1.2,
-          hitResult.tier === "marvelous" ? 4 : hitResult.tier === "excellent" ? 3.2 : 2.6,
-          hitResult.tier === "marvelous" ? 180 : 140
-        );
+        var burstScale =
+          rhythmMode === "performance"
+            ? hitResult.tier === "marvelous"
+              ? 1
+              : hitResult.tier === "excellent"
+                ? 0.9
+                : 0.78
+            : hitResult.tier === "marvelous"
+              ? 0.82
+              : hitResult.tier === "excellent"
+                ? 0.7
+                : 0.58;
+        launchIronFlower(flashCenter.x, flashCenter.y, flashCenter.z, burstScale);
         showRhythmFeedback(hitResult.label + " +" + hitResult.points, hitResult.color);
         updateRankPanel();
         if (window.IronflowerBhaptics) window.IronflowerBhaptics.triggerRhythmHaptic("performance");
@@ -3366,6 +3370,7 @@
 
         if (now - lastBurst < 900) return;
         lastBurst = now;
+        animateToolStrike();
         pourMoltenIronFromBowl();
         launchIronFlower(7.2, 1.45, -4.25);
         setStatus("打铁花：铁水泼出，铁锹拍开，铁花绽放", "Iron Flower: molten iron pours out, the shovel strikes it open, sparks bloom");
@@ -3428,22 +3433,25 @@
         animateToolStrike();
       }
 
-      function launchIronFlower(x, y, z) {
+      function launchIronFlower(x, y, z, scale) {
+        scale = scale == null ? 1 : Math.max(0.35, Math.min(1, scale));
         var root = document.querySelector("#fireworks");
         var origin = new THREE.Vector3(x, y, z + 0.65);
         var burst = new THREE.Vector3(x, y, z);
+        var sparkCount = Math.max(80, Math.round(420 * scale));
+        var emberCount = Math.max(24, Math.round(130 * scale));
 
         createIronComet(root, origin, burst);
         createShockRing(root, x, y, z);
-        createFlash(root, x, y, z, 11, 11, 760);
+        createFlash(root, x, y, z, 11 * scale, 11 * scale, 760);
 
-        for (var i = 0; i < 280; i += 1) {
+        for (var i = 0; i < sparkCount; i += 1) {
           var spark = document.createElement("a-entity");
-          var angle = THREE.MathUtils.degToRad(-18 + Math.random() * 216);
+          var angle = THREE.MathUtils.degToRad(-28 + Math.random() * 236);
           var fan = Math.pow(Math.random(), 0.55);
-          var speed = 1.4 + Math.random() * 6.8;
-          var size = 0.45 + Math.random() * 1.8;
-          var delay = Math.random() * 180;
+          var speed = 1.2 + Math.random() * 7.6;
+          var size = 0.42 + Math.random() * 1.9;
+          var delay = Math.random() * 240;
 
           spark.setAttribute("mixin", "spark");
           spark.setAttribute("position", x + " " + y + " " + z);
@@ -3461,19 +3469,19 @@
             vy: 0.35 + Math.random() * 3.8,
             vz: -Math.abs(Math.sin(angle)) * speed * 0.5 - Math.random() * 0.65,
             gravity: 0.035 + Math.random() * 0.04,
-            life: 950 + Math.random() * 1050,
+            life: 980 + Math.random() * 1050,
             delay: delay,
-            trail: Math.random() > 0.34,
+            trail: Math.random() > 0.5,
           });
           root.appendChild(spark);
         }
 
-        for (var j = 0; j < 110; j += 1) {
+        for (var j = 0; j < emberCount; j += 1) {
           var ember = document.createElement("a-entity");
           var drift = THREE.MathUtils.degToRad(25 + Math.random() * 130);
           var emberSpeed = 0.6 + Math.random() * 2.4;
           ember.setAttribute("mixin", "spark");
-          ember.setAttribute("position", (x + (Math.random() - 0.5) * 2.2) + " " + (y + 1.25 + Math.random() * 1.2) + " " + (z - 0.55 - Math.random() * 1.2));
+          ember.setAttribute("position", (x + (Math.random() - 0.5) * 2.8) + " " + (y + 1.1 + Math.random() * 1.45) + " " + (z - 0.55 - Math.random() * 1.35));
           ember.setAttribute("scale", "0.55 0.55 0.55");
           ember.setAttribute("material", "color: #ffb13d; emissive: #ff5a14; emissiveIntensity: 2.2; transparent: true; opacity: 0.85");
           ember.setAttribute("spark-move", {
@@ -3481,7 +3489,7 @@
             vy: -0.25 - Math.random() * 0.65,
             vz: -Math.sin(drift) * emberSpeed * 0.18,
             gravity: 0.018,
-            life: 1500 + Math.random() * 1500,
+            life: 1400 + Math.random() * 1300,
             delay: 180 + Math.random() * 450,
             trail: false,
           });
@@ -3575,7 +3583,7 @@
 
       function createTrailDot(root, position, fade) {
         if (!root) return;
-        if (root.children.length > 650) return;
+        if (root.children.length > 850) return;
         var dot = document.createElement("a-entity");
         dot.setAttribute("geometry", "primitive: sphere; radius: 0.018");
         dot.setAttribute("position", position.x + " " + position.y + " " + position.z);
